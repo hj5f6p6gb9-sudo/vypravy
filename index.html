@@ -54,7 +54,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. a</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. b</span></h1>
     <button id="openSettings">Nastavení</button>
   </header>
   <div id="status">Začni novou hru, nebo pokračuj v uložené.</div>
@@ -513,7 +513,7 @@ function geminiStream(voice, style, text) {
       const res2 = await call(1, v);
       if (res2.ok) { aiFmt = 1; store.set('aiFmt', 1); res = res2; }
     }
-    if (!res.ok) throw new Error('Nové hlasy ' + res.status + ': ' + (await res.text()).slice(0, 250));
+    if (!res.ok) { const e = new Error('Nové hlasy ' + res.status + ': ' + (await res.text()).slice(0, 250)); e.status = res.status; throw e; }
     const reader = res.body.getReader(), dec = new TextDecoder();
     let buf = '', odd = null, first = true;
     const take = b64 => {
@@ -658,7 +658,25 @@ function isMapLine(role, text) {
 let lastQueued = null;
 function flushPause() { lastQueued = null; }
 function markLineEnd() { if (lastQueued) lastQueued.lineEnded = true; }
-let keyWarned = 0;
+let keyWarned = 0, aiBlockedUntil = 0, quotaWarned = 0;
+const CHIRP = { 'Vypravěč': 'Algieba', 'Rádce': 'Aoede' };
+function chirpFor(role) { return 'cs-CZ-Chirp3-HD-' + (CHIRP[role] || 'Zubenelgenubi'); }
+function quotaHit() {   // the free limit of the new voices ran out: pause them for a minute
+  aiBlockedUntil = Date.now() + 60000;
+  if (Date.now() - quotaWarned < 120000) return;
+  quotaWarned = Date.now();
+  addLine('Chyba', 'Nové hlasy narazily na limit bezplatného účtu v AI Studiu. ' + ($('gKey').value.trim() ? 'Minutu budou mluvit starší hlasy, pak to zkusím znovu. ' : '') +
+    'Trvalé řešení: v AI Studiu zapnout u projektu platby (Billing).', 'err');
+}
+function playUrl(url, gen) {
+  return new Promise(res => {
+    stopCurrent = res;
+    audioEl.src = url;
+    audioEl.playbackRate = parseFloat($('rate').value) || 1;
+    audioEl.onended = res; audioEl.onerror = res; audioEl.onplaying = firstSound;
+    audioEl.play().catch(e => { if (e.name !== 'AbortError') res(); }); // AbortError = paused by barge-in, resumes later
+  }).then(() => URL.revokeObjectURL(url));
+}
 function cloudSpeak(role, text, provider, endsLine, mood) {
   const key = (provider === 'gemini' ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
   const voiceId = provider === 'gemini' ? castFor(role).voice : $(roleSelect(role)).value;
@@ -669,7 +687,11 @@ function cloudSpeak(role, text, provider, endsLine, mood) {
   const k = 'chars_' + provider;
   store.set(k, store.get(k, 0) + text.length); showUsage();
   let item;
-  if (provider === 'gemini') {
+  if (provider === 'gemini' && Date.now() < aiBlockedUntil) {
+    if (!$('gKey').value.trim()) return;
+    const p = fetchAudio('google', chirpFor(role), text); p.catch(() => {});
+    item = { p, role, text, pauseAfter: 0 };
+  } else if (provider === 'gemini') {
     const c = castFor(role);
     const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
     item = { stream: geminiStream(c.voice, style, text), role, text, pauseAfter: 0 };
@@ -695,19 +717,17 @@ async function playNext(gen) {
     if (item.stream) {
       await waitUnheld();
       if (gen !== elGen) return;
-      await playPcm(item, gen);
+      try { await playPcm(item, gen); }
+      catch (e) {
+        if (e.status !== 429) throw e;
+        quotaHit();
+        if ($('gKey').value.trim() && gen === elGen) await playUrl(await fetchAudio('google', chirpFor(item.role), item.text), gen);
+      }
     } else {
-    const url = await p;
-    await waitUnheld();
-    if (gen !== elGen) { URL.revokeObjectURL(url); return; }
-    await new Promise(res => {
-      stopCurrent = res;
-      audioEl.src = url;
-      audioEl.playbackRate = parseFloat($('rate').value) || 1;
-      audioEl.onended = res; audioEl.onerror = res; audioEl.onplaying = firstSound;
-      audioEl.play().catch(e => { if (e.name !== 'AbortError') res(); }); // AbortError = paused by barge-in, resumes later
-    });
-    URL.revokeObjectURL(url);
+      const url = await p;
+      await waitUnheld();
+      if (gen !== elGen) { URL.revokeObjectURL(url); return; }
+      await playUrl(url, gen);
     }
     if (gen === elGen) spokenText += item.text + ' ';
     if (item.pauseAfter && gen === elGen) { setStatus('Pauza na kreslení…  (Esc = přeskočit)'); await new Promise(res => { stopCurrent = res; setTimeout(res, item.pauseAfter); }); }
@@ -807,7 +827,7 @@ function makeStreamer() {
     if (isNl) { emit(sb + chunk, true); sb = ''; spokeAny = true; return; }
     if (!spokeAny) { emit(chunk, false); spokeAny = true; return; }
     sb += chunk;
-    if (sb.length > 170) { emit(sb, false); sb = ''; }
+    if (sb.length > (engine() === 'gemini' ? 600 : 170)) { emit(sb, false); sb = ''; }   // new voices: fewer, longer requests
   }
   return {
     feed(text) {
