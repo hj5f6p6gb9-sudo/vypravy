@@ -41,16 +41,25 @@
   #meter { height:4px; margin:0 auto 6px; width:240px; background:#222; border-radius:2px; overflow:hidden; opacity:.8; }
   #meterFill { height:100%; width:0; background:var(--dim); transition:width .06s linear; }
   #meter.speech #meterFill { background:var(--accent); }
+  #timing { text-align:center; color:var(--dim); font-size:13px; min-height:18px; }
+  #creator { margin-top:22px; border:1px solid #333; border-radius:10px; padding:10px 14px; }
+  #creator summary { cursor:pointer; color:var(--accent); font-weight:600; }
+  .cast { border-top:1px solid #2a2a2a; padding:12px 0; }
+  .cast .top { display:flex; gap:8px; align-items:center; }
+  .cast .top input { flex:1; } .cast .top select { flex:1.3; }
+  .cast button { font-size:16px; padding:10px 14px; border-radius:8px; border:none; cursor:pointer; background:#2a2a30; color:var(--fg); }
+  .cast textarea { width:100%; margin-top:8px; font:inherit; font-size:16px; padding:8px; background:#111; color:var(--fg); border:1px solid #444; border-radius:8px; min-height:58px; }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady</h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. a</span></h1>
     <button id="openSettings">Nastavení</button>
   </header>
   <div id="status">Začni novou hru, nebo pokračuj v uložené.</div>
   <div id="meter" title="Hladina mikrofonu"><div id="meterFill"></div></div>
+  <div id="timing"></div>
   <div id="startBar" style="display:flex;gap:14px;justify-content:center;padding:6px 20px 14px;">
     <button class="primary" id="startNew" style="font-size:22px;padding:16px 28px;border:none;border-radius:12px;cursor:pointer;">Nová hra</button>
     <button class="secondary" id="startResume" style="font-size:22px;padding:16px 28px;border:none;border-radius:12px;cursor:pointer;">Pokračovat v uložené hře</button>
@@ -72,14 +81,15 @@
 
     <label>Model (mozek Pána jeskyně)</label>
     <select id="model">
-      <option value="claude-sonnet-5-5">Claude Sonnet 5.5 – chytřejší (doporučeno)</option>
-      <option value="claude-haiku-5-5">Claude Haiku 5.5 – rychlejší a levnější</option>
+      <option value="claude-haiku-5-5">Claude Haiku 5.5 – rychlejší odpovědi (výchozí)</option>
+      <option value="claude-sonnet-5-5">Claude Sonnet 5.5 – chytřejší, o něco pomalejší</option>
     </select>
 
     <label>Hlasy</label>
     <select id="engine">
+      <option value="gemini">Nové hlasy – Google AI Studio (doporučeno)</option>
       <option value="mac">Hlasy Macu (zdarma)</option>
-      <option value="google">Google Chirp 3 HD (doporučeno, zdarma do limitu)</option>
+      <option value="google">Google Chirp 3 HD (starší, plošší)</option>
       <option value="el">ElevenLabs (nejlepší, placené kredity)</option>
     </select>
     <div id="gBox">
@@ -97,10 +107,31 @@
       <div class="hint" id="elUsage"></div>
       <div class="row"><button class="secondary" id="elReset">Vynulovat počítadlo</button></div>
     </div>
+    <div id="aiBox">
+      <label>Klíč pro nové hlasy (AI Studio, začíná AIza…)</label>
+      <input id="aiKey" type="password" autocomplete="off">
+      <div class="hint">Klíč se uloží jen v tomto prohlížeči. Vytvoříš ho na aistudio.google.com.</div>
+      <label>Model hlasu</label>
+      <select id="aiModel">
+        <option value="gemini-3.8-flash-tts">Gemini 3.8 Flash TTS – výraznější přednes</option>
+        <option value="gemini-3.8-flash-lite-tts">Gemini 3.8 Flash-Lite TTS – rychlejší a levnější</option>
+      </select>
+      <div class="row"><button class="secondary" id="aiLoad">Načíst všechny hlasy z AI Studia</button></div>
+      <div class="hint" id="aiInfo"></div>
+      <div class="hint" id="aiUsage"></div>
+      <details id="creator" open>
+        <summary>Obsazení hlasů (pro tvůrce výpravy)</summary>
+        <div class="hint">Každá role má svůj hlas a pokyn k přednesu. Tlačítkem ▶ si roli poslechneš. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
+        <div id="castList"></div>
+        <div class="row"><button class="secondary" id="castAdd">+ Přidat postavu</button><button class="secondary" id="castReset">Vrátit výchozí obsazení</button></div>
+      </details>
+    </div>
+    <div id="roleBox">
     <label>Hlas Vypravěče</label><select id="voiceNarr"></select>
     <label>Hlas Rádce (pravidla, mapa)</label><select id="voiceRad"></select>
     <label>Hlas postav a nestvůr</label><select id="voiceChar"></select>
     <div class="hint">Když je v seznamu jen jeden český hlas (Zuzana), role se odliší výškou a rychlostí. Lepší české hlasy: Nastavení systému Mac → Zpřístupnění → Mluvený obsah → Systémový hlas → Spravovat hlasy → Čeština.</div>
+    </div>
 
     <label>Rozpoznávání řeči</label>
     <select id="stt">
@@ -109,10 +140,9 @@
     </select>
     <div class="hint">Google používá stejný klíč (AIza…) jako hlasy Chirp. V Google Cloud musí být zapnuté „Cloud Speech-to-Text API“. Prvních 60 minut řeči měsíčně je zdarma, pak zhruba 0,02 $ za minutu.</div>
 
-    <label style="display:flex;gap:12px;align-items:center;color:var(--fg)"><input id="handsFree" type="checkbox" style="width:24px;height:24px"> Poslouchat pořád (bez mezerníku)</label>
-    <div class="hint">Pán jeskyně poslouchá i ve chvíli, kdy mluví: stačí mu skočit do řeči. Řeč mimo hru by měl ignorovat. Mezerník funguje dál.</div>
+    <div class="hint">Pán jeskyně poslouchá pořád, i když sám mluví: stačí mu skočit do řeči. Řeč mimo hru by měl ignorovat.</div>
     <label>Konec promluvy po tichu: <span id="endSilenceVal"></span> s</label>
-    <input id="endSilence" type="range" min="0.5" max="2" step="0.1">
+    <input id="endSilence" type="range" min="0.3" max="2" step="0.1">
     <div class="hint">Kratší = PJ odpovídá rychleji, ale může vám skočit do přemýšlení.</div>
     <label>Citlivost mikrofonu: <span id="micSensVal"></span></label>
     <input id="micSens" type="range" min="0.5" max="2" step="0.1">
@@ -136,13 +166,13 @@
 
 <script type="text/plain" id="adventure"># Sklep U Zlatého korbele
 
-Výukové dobrodružství · 2–4 hráči · postavy 1. úrovně · cca 2–2,5 hodiny včetně tvorby postav
+Výukové dobrodružství · 2–4 hráči · postavy 1. úrovně · cca 2 hodiny
 
 ## 0. Přehled pro Pána jeskyně
 
 Zápletka: Hostinskému Matoušovi z hospody U Zlatého korbele mizí ze sklepa zásoby a v noci odtamtud slyší škrábání. Hospoda stojí na zbytcích skladiště trpasličího kupce Hrudomíra. Za zdí sklepa je zapomenutá komora a krypta. Poklad dodnes hlídá kostlivec strážce. Přes puklinu ve zdi se dovnitř dostaly obří krysy.
 
-Scény: 0. Tvorba postav · 1. Výčep (mluvení za postavu, zkouška) · 2. Sklep se sudy (diktování mapy, Vnímání, první boj, obranný hod) · 3. Stará komora (průzkum, skrytá věc – páčidlo) · 4. Krypta (hádanka, pomoc spolubojovníka = výhoda) · 5. Pokladnice (boj nebo řešení bez boje, poklad)
+Scény: 0. Výběr postav · 1. Výčep (mluvení za postavu, zkouška) · 2. Sklep se sudy (diktování mapy, Vnímání, první boj, obranný hod) · 3. Stará komora (průzkum, skrytá věc – páčidlo) · 4. Krypta (hádanka, pomoc spolubojovníka = výhoda) · 5. Pokladnice (boj nebo řešení bez boje, poklad)
 
 ### Základní pravidla vedení
 - Hody: hráč hlásí jen součet kostek, bonus přičte PJ. Při prvním hodu to Rádce připomene.
@@ -158,11 +188,9 @@ Scény: 0. Tvorba postav · 1. Výčep (mluvení za postavu, zkouška) · 2. Skl
 - 3 postavy: sklep 2 obří krysy; pokladnice kostlivec + 1 krysa
 - 4 postavy: sklep 3 obří krysy; pokladnice kostlivec + 2 krysy
 
-## Scéna 0: Tvorba postav
+## Scéna 0: Výběr postav
 
-Rádce provádí krok za krokem; odpověď hráče (jméno, volba) je potvrzení, žádné „mám“ se nevyžaduje: 1) jméno, 2) rasa (např. člověk, elf, trpaslík, půlčík, gnóm…), 3) povolání (nováčkům doporuč bojovník, tulák, klerik, kouzelník), 4) vlastnosti Síla, Obratnost, Odolnost, Inteligence, Moudrost, Charisma – buď hodem (4 kostky, nejnižší se škrtne, šestkrát), nebo rychlou sadou 15, 14, 13, 12, 10, 8, 5) dopočítané životy, obrana, útoky, dovednosti (podle pravidel 5. edice pro 1. úroveň), 6) vybavení i s vlastnostmi (zranění, dosah), 7) shrnutí. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj.
-
-Rychlý start: hotové postavy (hráč si je jen pojmenuje).
+Postavy se v úvodu netvoří. Každý hráč si vybere jednu ze čtyř hotových postav níže a může si ji přejmenovat. Rádce postavu stručně představí (životy, obrana, hlavní útok, jedna zvláštní schopnost) a hráč si ji zapíše do sešitu. Když hráč ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci a zatím ať si vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj.
 
 Trpaslík bojovník (navrhované jméno Borymir): Životy 12 · Obrana 18 (kroužková zbroj a štít) · Síla +3, Obratnost +0, Odolnost +2, Inteligence +0, Moudrost +1, Charisma −1 · Válečná sekera útok +5, zranění k6+4 · Druhý dech: jednou do odpočinku vyléčí k6+3 · Atletika +5, Vnímání +3 · Vidění ve tmě 12 čtverečků · lucerna, provaz, zásoby.
 
@@ -254,12 +282,13 @@ TAJEMSTVÍ SCÉNÁŘE: Nikdy hráčům dopředu neprozrazuj, co je čeká – ž
 
 FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 - Každý řádek začíná mluvčím a dvojtečkou: „Vypravěč:“, „Rádce:“ nebo jménem postavy (např. „Matouš:“). Vypravěč = příběh a atmosféra. Rádce = pravidla, hody, diktování mapy a deníku postavy.
+- Za jméno mluvčího můžeš do závorky napsat krátký pokyn k přednesu, např. „Vypravěč (napjatě, tišeji):“ nebo „Matouš (šeptem):“. Závorka se nečte nahlas, jen řídí hlas. Používej ji, když se nálada mění (boj, tajemno, úleva, vtip), ne u každého řádku.
 - Žádný markdown: žádné hvězdičky, odrážky, nadpisy ani tabulky.
 - Čísla do dvaceti piš slovy ve správném pádě („hoď třemi kostkami“, „potřebuješ aspoň devět“, „zbývají ti čtyři životy“), aby je hlas přečetl přirozeně. Větší čísla piš číslicemi.
 - Kostky říkej slovy („hoď třemi kostkami“, „jednou kostkou a přičti 4“), nikdy nepiš zkratky jako 3k6 nebo k6.
 - Nikdy po hráčích nežádej potvrzení typu „mám“ nebo „hotovo“. Odpověď hráče (jméno, volba, hod) je sama potvrzení, hned na ni navaž dalším krokem. Když hráč něco nestihne zapsat, řekne „stop“ nebo „zopakuj“.
 - Mluv přirozeně jako zkušený vypravěč u stolu: obvykle 1–3 krátké věty, víc jen při popisu nového místa. Na konci jasně řekni, co mají hráči udělat nebo na co si hodit, ale nekonči pořád stejnou otázkou.
-- Neopakuj, co hráč právě řekl, a nezačínej potvrzením typu „Dobře“, „Rozumím“, „Takže…“, „Výborně“. Neshrnuj, co už zaznělo. Nepokládej víc otázek najednou.
+- NIKDY NEOPAKUJ, CO HRÁČ PRÁVĚ ŘEKL. Když nahlásí hod („házím, šest“), neříkej „hodil jsi šest“, rovnou řekni, co se stalo. Když řekne, co dělá, nepopisuj to po něm znovu, řekni až následek. Nezačínej potvrzením typu „Dobře“, „Rozumím“, „Takže…“, „Výborně“. Neshrnuj, co už zaznělo. Nepokládej víc otázek najednou.
 - MLUV JAKO ČLOVĚK U STOLU, NE JAKO PŘEDČÍTAČ: krátké věty, jak se říkají nahlas, žádné výčty a souvětí na tři řádky. Klidně hovorově („Jo, to jde.“, „Hm, zkus to.“), ale česky správně. Reaguj na to, co hráč skutečně řekl, ne obecnou frází.
 - NEOPAKUJ SE: popis místa, který už zazněl, znovu neříkej (jen na „zopakuj“). Než odpovíš, podívej se na své poslední odpovědi a nepoužij stejný začátek, stejný konec ani stejnou otázku. Nekonči každou odpověď otázkou typu „Co uděláte?“; často stačí prostě domluvit a hráči se ozvou sami.
 - Když v historii uvidíš „…(hráč mě přerušil)“, hráč ti skočil do řeči jako u stolu. K nedořečenému se nevracej, nezačínej znovu od začátku a neomlouvej se, prostě odpověz na to, co řekl. Když zbylá informace byla důležitá (např. číslo potřebné na hod), řekni ji jednou krátkou větou.
@@ -268,14 +297,16 @@ FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 
 PRAVIDLA KOSTEK (jen šestistěnné kostky):
 - Zkouška, útok, záchrana: tři kostky + bonus. Výhoda: čtyři kostky, nejnižší se škrtne. Nevýhoda: čtyři kostky, nejvyšší se škrtne. Součet kostek 16 a víc = kritický úspěch (u útoku se zranění hází dvakrát), 5 a méně = automatický neúspěch.
-- Hráč hlásí jen součet kostek; bonus přičítáš ty. Výsledek řekni stručně („Šestnáct, zásah!“); celý výpočet vysvětli jen při prvních hodech nováčků.
+- Hráč hlásí jen součet kostek; bonus přičítáš ty. Výsledek řekni rovnou a bez čísla („Zásah!“, „Vedle.“) a hned popiš, co se stalo. Číslo zopakuj jen tehdy, když si nejsi jistý, že jsi ho rozuměl správně. Výpočet vysvětli jen při prvních hodech nováčků.
 - Ty nikdy neházíš. Útok nestvůry řeš obranným hodem hráče: řekni mu přímo, kolik musí padnout na třech kostkách; to číslo je 22 + útočný bonus nestvůry − Obrana postavy. Zranění nestvůr je pevné.
 - Záchranu nestvůry proti kouzlu hází hráč za ni.
 - Pečlivě hlídej životy nestvůr i postav, kouzla a vybavení. Občas krátce shrň, kolik komu zbývá.
 
+SEŠIT HRÁČE: každý hráč si vede postavu v sešitě, ale pravdu držíš ty. Každou změnu (životy, peníze, zkušenosti, nová věc) ohlas jednou krátkou větou, aby se dala zapsat („Zapiš si dvanáct zlatých.“). Když hráč řekne jiné číslo, než máš ty, v klidu ho oprav a hraj dál. Na dotaz („kolik mám životů?“) odpoví Rádce jednou větou.
+
 STÁLÝ POSLECH: aplikace poslouchá celý stůl pořád, i když mluvíš ty. Když zpráva hráčů zjevně není určená do hry (bavíte se mimo hru, např. „podej mi pivo“, „kdy je večeře“) nebo je to jen útržek bez smyslu, odpověz přesně „(ticho)“ a nic jiného.
 
-ZAČÁTEK HRY: krátce přivítej hráče, zeptej se, kolik jich hraje a jak se jmenují, a nabídni tvorbu postavy, nebo hotové postavy. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě. Pak hraj.
+ZAČÁTEK HRY: jednou dvěma větami přivítej hráče a zeptej se, kdo dnes hraje a za jakou postavu. Nabídni čtyři hotové postavy (stačí je vyjmenovat jednou větou: trpaslík bojovník, půlčík tulák, člověk klerik, elf kouzelník). Postavy se v úvodu netvoří. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě. Pak hraj.
 
 DOBRODRUŽSTVÍ:
 `;
@@ -373,6 +404,188 @@ async function loadGVoices() {
   } catch (e) { $('gInfo').textContent = 'Chyba: ' + e.message; }
 }
 
+// ---------- New voices (Google AI Studio / Gemini TTS): cast of roles ----------
+const AI_VOICES = [['Zephyr','jasný','ž'],['Puck','veselý','m'],['Charon','věcný','m'],['Kore','pevný','ž'],['Fenrir','vzrušený','m'],['Leda','mladistvý','ž'],
+  ['Orus','pevný','m'],['Aoede','svěží','ž'],['Callirrhoe','pohodový','ž'],['Autonoe','jasný','ž'],['Enceladus','dýchavičný','m'],['Iapetus','čistý','m'],
+  ['Umbriel','pohodový','m'],['Algieba','hladký','m'],['Despina','hladký','ž'],['Erinome','čistý','ž'],['Algenib','chraplavý','m'],['Rasalgethi','věcný','m'],
+  ['Laomedeia','veselý','ž'],['Achernar','měkký','ž'],['Alnilam','pevný','m'],['Schedar','vyrovnaný','m'],['Gacrux','zralý','ž'],['Pulcherrima','přímý','ž'],
+  ['Achird','přátelský','m'],['Zubenelgenubi','ležérní','m'],['Vindemiatrix','jemný','ž'],['Sadachbia','živý','m'],['Sadaltager','znalý','m'],['Sulafat','vřelý','ž']];
+const AI_FALLBACK_VOICE = 'Charon';
+const CAST_DEFAULT = [
+  { role: 'Vypravěč', voice: 'Riko', style: 'Zkušený vypravěč dobrodružných příběhů u ohně. Mluv česky, klidně, hlubokým hlasem, s napětím a s chutí vyprávět.' },
+  { role: 'Rádce', voice: 'Kore', style: 'Věcná a přátelská průvodkyně pravidly hry. Mluv česky, jasně, svižně a stručně.' },
+  { role: 'Matouš', voice: 'Achird', style: 'Zavalitý dobrosrdečný hostinský, trochu nervózní. Mluv česky, naléhavě a ztišeným hlasem.' },
+  { role: 'Ostatní postavy', voice: 'Algenib', style: 'Postava z fantasy příběhu. Mluv česky, výrazně a s charakterem.' }
+];
+const CAST_FIXED = ['Vypravěč', 'Rádce', 'Ostatní postavy'];
+const CAST_SAMPLE = { 'Vypravěč': 'Dveře se se skřípěním rozjedou. Pod helmou nejsou oči, jen prázdné jamky. Kostlivec pomalu zvedne meč.',
+  'Rádce': 'Hoď třemi kostkami a řekni mi součet.' };
+let cast = store.get('cast', null) || JSON.parse(JSON.stringify(CAST_DEFAULT));
+let aiVoices = store.get('aiVoices', []);   // extended library: [{id, label, info}]
+function lc(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+function castFor(role) {
+  const r = lc(role);
+  return cast.find(c => lc(c.role) === r) || cast.find(c => c.role === 'Ostatní postavy') || cast[0];
+}
+function aiVoiceId(v) {   // a name picked in the cast -> the id the API wants
+  if (AI_VOICES.some(x => x[0] === v)) return v;
+  const hit = aiVoices.find(x => x.id === v) || aiVoices.find(x => lc(x.label) === lc(v));
+  return hit ? hit.id : v;
+}
+function aiVoiceOptions(current) {
+  const opts = AI_VOICES.map(([n, d, g]) => ({ id: n, label: n + ' – ' + d + ' (' + (g === 'm' ? 'muž' : 'žena') + ')' }));
+  for (const v of aiVoices) if (!opts.some(o => o.id === v.id)) opts.push({ id: v.id, label: v.label + (v.info ? ' – ' + v.info : '') });
+  if (current && !opts.some(o => o.id === current) && !aiVoices.some(v => lc(v.label) === lc(current))) opts.unshift({ id: current, label: current });
+  return opts;
+}
+function saveCast() { store.set('cast', cast); }
+function renderCast() {
+  const box = $('castList'); box.innerHTML = '';
+  cast.forEach((c, i) => {
+    const row = document.createElement('div'); row.className = 'cast';
+    const top = document.createElement('div'); top.className = 'top';
+    const name = document.createElement('input'); name.value = c.role; name.placeholder = 'Jméno postavy (jak ho píše PJ)';
+    if (CAST_FIXED.includes(c.role)) name.readOnly = true;
+    name.onchange = () => { c.role = name.value.trim() || c.role; saveCast(); };
+    const sel = document.createElement('select');
+    const cur = aiVoiceId(c.voice);
+    for (const o of aiVoiceOptions(cur)) { const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; sel.appendChild(op); }
+    sel.value = cur; sel.onchange = () => { c.voice = sel.value; saveCast(); };
+    const play = document.createElement('button'); play.textContent = '▶'; play.title = 'Poslechnout';
+    play.onclick = () => { saveSettings(); ensureOutCtx(); shutUp(); tm = { end: performance.now(), silence: 0, test: true };
+      speak(c.role, CAST_SAMPLE[c.role] || 'Vy vypadáte jako lidi, co se nebojí tmy. Nechcete si vydělat?', true); };
+    top.appendChild(name); top.appendChild(sel); top.appendChild(play);
+    if (!CAST_FIXED.includes(c.role)) { const del = document.createElement('button'); del.textContent = '✕'; del.title = 'Odebrat';
+      del.onclick = () => { cast.splice(i, 1); saveCast(); renderCast(); }; top.appendChild(del); }
+    const st = document.createElement('textarea'); st.value = c.style || ''; st.placeholder = 'Pokyn k přednesu (kdo to je a jak mluví)';
+    st.onchange = () => { c.style = st.value.trim(); saveCast(); };
+    row.appendChild(top); row.appendChild(st); box.appendChild(row);
+  });
+}
+async function loadAiVoices(quiet) {
+  const key = $('aiKey').value.trim();
+  if (!key) { if (!quiet) $('aiInfo').textContent = 'Nejdřív vlož klíč z AI Studia.'; return; }
+  if (!quiet) $('aiInfo').textContent = 'Načítám hlasy…';
+  try {
+    let all = [], token = '';
+    for (let page = 0; page < 6; page++) {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/voices?page_size=1000' + (token ? '&page_token=' + encodeURIComponent(token) : ''),
+        { headers: { 'x-goog-api-key': key } });
+      if (!res.ok) throw new Error('AI Studio ' + res.status + ': ' + (await res.text()).slice(0, 200));
+      const d = await res.json();
+      all = all.concat(d.voices || []);
+      token = d.next_page_token || d.nextPageToken || '';
+      if (!token) break;
+    }
+    aiVoices = all.map(v => {
+      const id = v.id || v.name || '';
+      const g = lc(v.gender);
+      return { id, label: v.display_name || v.displayName || id,
+        info: [g.startsWith('f') ? 'žena' : g.startsWith('m') ? 'muž' : '', v.pitch || '', v.accent || ''].filter(Boolean).join(', ').slice(0, 40) };
+    }).filter(v => v.id).sort((a, b) => a.label.localeCompare(b.label));
+    store.set('aiVoices', aiVoices);
+    renderCast();
+    $('aiInfo').textContent = 'Načteno hlasů z knihovny: ' + aiVoices.length + '.';
+  } catch (e) { if (!quiet) $('aiInfo').textContent = 'Hlasy z knihovny se nepodařilo načíst (' + e.message + '). Základních 30 hlasů funguje i tak.'; }
+}
+
+// One streamed speech request. Audio arrives in pieces (raw 16-bit sound) and is played as it comes.
+let aiFmt = store.get('aiFmt', 0), aiVoiceWarned = false;
+function aiBody(fmt, voice, style, text) {
+  if (fmt === 0) return { contents: [{ role: 'user', parts: [style ? { text, speech_metadata: { style } } : { text }] }],
+    generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { voice } } } };
+  return { contents: [{ role: 'user', parts: [{ text: (style ? style + ' Řekni: ' : '') + text }] }],
+    generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } };
+}
+function geminiStream(voice, style, text) {
+  const st = { chunks: [], done: false, err: null, rate: 24000, onData: null };
+  const key = $('aiKey').value.trim(), model = $('aiModel').value, signal = elAbort.signal;
+  const call = (fmt, v) => fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
+    method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(aiBody(fmt, v, style, text)) });
+  (async () => {
+    let v = aiVoiceId(voice), res = await call(aiFmt, v);
+    if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // unknown voice from the library
+      const why = (await res.text()).slice(0, 160);
+      if (!aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení dej „Načíst všechny hlasy z AI Studia“ a vyber ho znovu.', 'err'); }
+      v = AI_FALLBACK_VOICE; res = await call(aiFmt, v);
+    }
+    if (!res.ok && res.status === 400 && aiFmt === 0) {   // older request format
+      const res2 = await call(1, v);
+      if (res2.ok) { aiFmt = 1; store.set('aiFmt', 1); res = res2; }
+    }
+    if (!res.ok) throw new Error('Nové hlasy ' + res.status + ': ' + (await res.text()).slice(0, 250));
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', odd = null, first = true;
+    const take = b64 => {
+      const bin = atob(b64); let bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      if (first) { first = false; if (bin.slice(0, 4) === 'RIFF') bytes = bytes.subarray(44); }
+      if (odd !== null) { const j = new Uint8Array(bytes.length + 1); j[0] = odd; j.set(bytes, 1); bytes = j; odd = null; }
+      if (bytes.length % 2) { odd = bytes[bytes.length - 1]; bytes = bytes.subarray(0, bytes.length - 1); }
+      const n = bytes.length >> 1; if (!n) return;
+      const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), f = new Float32Array(n);
+      for (let i = 0; i < n; i++) f[i] = dv.getInt16(i * 2, true) / 32768;
+      st.chunks.push(f); if (st.onData) st.onData();
+    };
+    const handle = line => {
+      if (!line.startsWith('data:')) return;
+      let d; try { d = JSON.parse(line.slice(5)); } catch { return; }
+      if (d.error) throw new Error('Nové hlasy: ' + (d.error.message || 'chyba'));
+      for (const c of d.candidates || []) for (const part of (c.content && c.content.parts) || []) {
+        const inl = part.inlineData || part.inline_data; if (!inl || !inl.data) continue;
+        const m = /rate=(\d+)/.exec(inl.mimeType || inl.mime_type || ''); if (m) st.rate = parseInt(m[1], 10);
+        take(inl.data);
+      }
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line) handle(line); }
+    }
+    if (buf.trim()) handle(buf.trim());
+    if (!st.chunks.length) throw new Error('Nové hlasy nevrátily žádný zvuk.');
+  })().catch(e => { st.err = e; }).finally(() => { st.done = true; if (st.onData) st.onData(); });
+  return st;
+}
+let pcmNodes = [];
+function playPcm(item, gen) {
+  const st = item.stream; ensureOutCtx();
+  const rate = parseFloat($('rate').value) || 1;
+  return new Promise((resolve, reject) => {
+    let idx = 0, t = 0, last = null, started = false, finished = false;
+    const finish = () => { if (finished) return; finished = true; st.onData = null; (st.err && !started && st.err.name !== 'AbortError') ? reject(st.err) : resolve(); };
+    stopCurrent = () => { for (const n of pcmNodes) { try { n.onended = null; n.stop(); } catch (e) {} } pcmNodes = []; finish(); };
+    const pump = () => {
+      if (finished) return;
+      if (gen !== elGen || !outCtx) return finish();
+      while (idx < st.chunks.length) {
+        const c = st.chunks[idx++];
+        const buf = outCtx.createBuffer(1, c.length, st.rate); buf.copyToChannel(c, 0);
+        const n = outCtx.createBufferSource(); n.buffer = buf; n.playbackRate.value = rate; n.connect(outGain);
+        if (!started) { started = true; t = outCtx.currentTime + 0.03; firstSound(); }
+        if (t < outCtx.currentTime) t = outCtx.currentTime + 0.02;   // the stream fell behind
+        n.start(t); t += buf.duration / rate; pcmNodes.push(n); last = n;
+        n.onended = () => { pcmNodes = pcmNodes.filter(x => x !== n); if (st.done && idx >= st.chunks.length && n === last) finish(); };
+      }
+      if (st.done && idx >= st.chunks.length && !pcmNodes.length) finish();
+    };
+    st.onData = pump; pump();
+  });
+}
+
+// ---------- How long the players wait (shown under the status line) ----------
+let tm = {};
+function firstSound() {
+  if (!tm.end || tm.audio) return;
+  tm.audio = performance.now();
+  const s = x => (Math.max(0, x) / 1000).toFixed(1).replace('.', ',');
+  if (tm.test) { $('timing').textContent = 'Hlas začal mluvit za ' + s(tm.audio - tm.end) + ' s'; $('aiInfo').textContent = $('timing').textContent + '.'; return; }
+  const stt = (tm.stt || tm.end) - tm.end, llm = (tm.llm || tm.audio) - (tm.stt || tm.end), tts = tm.audio - (tm.llm || tm.audio);
+  $('timing').textContent = 'Odezva ' + s(tm.audio - tm.end + (tm.silence || 0)) + ' s od konce věty  ·  čekání na ticho ' + s(tm.silence || 0) +
+    '  ·  rozpoznání ' + s(stt) + '  ·  PJ ' + s(llm) + '  ·  hlas ' + s(tts);
+}
+
 function roleSelect(role) { return role === 'Vypravěč' ? 'voiceNarr' : role === 'Rádce' ? 'voiceRad' : 'voiceChar'; }
 
 let speakQueueCount = 0, spokenText = '', pjRecent = [], lastSpeechEnd = 0;
@@ -383,10 +596,10 @@ function speechDone() {
   if (speakQueueCount <= 0 && !busy && !listening) idleStatus();
 }
 
-function speak(role, text, endsLine) {
+function speak(role, text, endsLine, mood) {
   text = text.replace(/[*_#`>|]/g, '').trim();
   if (!text) return;
-  if (engine() !== 'mac') return cloudSpeak(role, text, engine(), endsLine);
+  if (engine() !== 'mac') return cloudSpeak(role, text, engine(), endsLine, mood);
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'cs-CZ';
   const v = voices.find(x => x.name === $(roleSelect(role)).value) || voices[0];
@@ -398,6 +611,7 @@ function speak(role, text, endsLine) {
   else if (role !== 'Vypravěč') { pitch = (c === n || c === r) ? 0.75 : 1; rate = base * 0.95; }
   u.pitch = pitch; u.rate = rate;
   speakQueueCount++; rememberPJ(text);
+  u.onstart = firstSound;
   u.onend = () => { spokenText += text + ' '; speechDone(); }; u.onerror = speechDone;
   speechSynthesis.speak(u);
 }
@@ -409,6 +623,7 @@ function showUsage() {
   const e = store.get('chars_el', 0), g = store.get('chars_google', 0);
   $('elUsage').textContent = 'Spotřebováno ElevenLabs znaků: ' + e + ' ≈ ' + Math.round(e * 0.5) + ' kreditů';
   $('gUsage').textContent = 'Spotřebováno Google znaků: ' + g + ' (zdarma je 1 000 000 měsíčně)';
+  $('aiUsage').textContent = 'Přečteno novými hlasy: ' + store.get('chars_gemini', 0) + ' znaků';
 }
 
 function fetchAudio(provider, voiceId, text) {
@@ -443,16 +658,27 @@ function isMapLine(role, text) {
 let lastQueued = null;
 function flushPause() { lastQueued = null; }
 function markLineEnd() { if (lastQueued) lastQueued.lineEnded = true; }
-function cloudSpeak(role, text, provider, endsLine) {
-  const key = (provider === 'google' ? $('gKey') : $('elKey')).value.trim();
-  const voiceId = $(roleSelect(role)).value;
-  if (!key || !voiceId) { addLine('Chyba', 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); return; }
+let keyWarned = 0;
+function cloudSpeak(role, text, provider, endsLine, mood) {
+  const key = (provider === 'gemini' ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
+  const voiceId = provider === 'gemini' ? castFor(role).voice : $(roleSelect(role)).value;
+  if (!key || !voiceId) {
+    if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', provider === 'gemini' ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
+    return;
+  }
   const k = 'chars_' + provider;
   store.set(k, store.get(k, 0) + text.length); showUsage();
-  const p = fetchAudio(provider, voiceId, text);
-  p.catch(() => {}); // reported when played
-  speakQueueCount++;
-  const item = { p, role, text, pauseAfter: 0 }; rememberPJ(text);
+  let item;
+  if (provider === 'gemini') {
+    const c = castFor(role);
+    const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
+    item = { stream: geminiStream(c.voice, style, text), role, text, pauseAfter: 0 };
+  } else {
+    const p = fetchAudio(provider, voiceId, text);
+    p.catch(() => {}); // reported when played
+    item = { p, role, text, pauseAfter: 0 };
+  }
+  speakQueueCount++; rememberPJ(text);
   // pause for drawing after each map line (only if another line follows)
   if (lastQueued && lastQueued.mapLine && lastQueued.lineEnded) lastQueued.item.pauseAfter = (parseFloat($('mapPause').value) || 0) * 1000;
   lastQueued = { item, mapLine: isMapLine(role, text) || (lastQueued && lastQueued.mapLine && !lastQueued.lineEnded && role === 'Rádce'), lineEnded: !!endsLine };
@@ -466,6 +692,11 @@ async function playNext(gen) {
   elPlaying = true;
   const item = elQueue.shift(); const p = item.p;
   try {
+    if (item.stream) {
+      await waitUnheld();
+      if (gen !== elGen) return;
+      await playPcm(item, gen);
+    } else {
     const url = await p;
     await waitUnheld();
     if (gen !== elGen) { URL.revokeObjectURL(url); return; }
@@ -473,10 +704,11 @@ async function playNext(gen) {
       stopCurrent = res;
       audioEl.src = url;
       audioEl.playbackRate = parseFloat($('rate').value) || 1;
-      audioEl.onended = res; audioEl.onerror = res;
+      audioEl.onended = res; audioEl.onerror = res; audioEl.onplaying = firstSound;
       audioEl.play().catch(e => { if (e.name !== 'AbortError') res(); }); // AbortError = paused by barge-in, resumes later
     });
     URL.revokeObjectURL(url);
+    }
     if (gen === elGen) spokenText += item.text + ' ';
     if (item.pauseAfter && gen === elGen) { setStatus('Pauza na kreslení…  (Esc = přeskočit)'); await new Promise(res => { stopCurrent = res; setTimeout(res, item.pauseAfter); }); }
   } catch (e) {
@@ -494,12 +726,14 @@ function releaseWaiters() { const w = heldWaiters; heldWaiters = []; w.forEach(f
 function holdPJ() {
   if (pjHeld) return; pjHeld = true;
   try { audioEl.pause(); } catch (e) {}
+  if (pcmNodes.length && outCtx) { try { outCtx.suspend(); } catch (e) {} }
   if (engine() === 'mac') speechSynthesis.pause();
 }
 function resumePJ() {
   duck(false);
   if (!pjHeld) return; pjHeld = false;
   if (engine() === 'mac') speechSynthesis.resume();
+  if (outCtx && outCtx.state === 'suspended') outCtx.resume();
   if (elPlaying && audioEl.src && audioEl.paused && !audioEl.ended) audioEl.play().catch(() => {});
   releaseWaiters();
 }
@@ -519,7 +753,7 @@ function ensureOutCtx() {
   } catch (e) { console.warn('outCtx', e); }
 }
 function rms(a) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * a[i]; return Math.sqrt(s / a.length); }
-function outLevel() { if (!outAnalyser || audioEl.paused) return 0; outAnalyser.getFloatTimeDomainData(outBuf); return rms(outBuf); }
+function outLevel() { if (!outAnalyser || (audioEl.paused && !pcmNodes.length)) return 0; outAnalyser.getFloatTimeDomainData(outBuf); return rms(outBuf); }
 function duck(on) { if (outGain) outGain.gain.setTargetAtTime(on ? 0.25 : 1, outCtx.currentTime, 0.04); }
 
 function shutUp() {
@@ -528,6 +762,8 @@ function shutUp() {
   elGen++; elAbort.abort(); elAbort = new AbortController();
   elQueue = []; elPlaying = false;
   audioEl.pause(); if (stopCurrent) { stopCurrent(); stopCurrent = null; }
+  for (const n of pcmNodes) { try { n.onended = null; n.stop(); } catch (e) {} } pcmNodes = [];
+  if (outCtx && outCtx.state === 'suspended') outCtx.resume();
   speakQueueCount = 0;
   releaseWaiters();
 }
@@ -541,18 +777,18 @@ function interruptPJ() {
 }
 function idleStatus() {
   if (handsFreeOn()) { setStatus('Poslouchám stůl… (mluvte)'); hfEnsure(); }
-  else setStatus('Čekám na vás. Drž mezerník a mluv.');
+  else setStatus('Začni novou hru, nebo pokračuj v uložené.');
 }
 
 // ---------- Streaming text -> lines -> speech ----------
 function makeStreamer() {
-  let pending = '', speaker = 'Vypravěč', atLineStart = true, lineEl = null, firstChunk = true;
+  let pending = '', speaker = 'Vypravěč', mood = '', atLineStart = true, lineEl = null, firstChunk = true;
   function emit(chunk, endsLine) {
     let t = chunk;
     if (atLineStart) {
-      const m = t.match(/^\s*([^\s:][^:\n]{0,28}):\s*/);
-      if (m && !/\d/.test(m[1]) && m[1].trim().split(/\s+/).length <= 3) { speaker = m[1].replace(/[*_]/g, '').trim(); t = t.slice(m[0].length); lineEl = null; }
-      else if (t.trim()) { lineEl = null; }
+      const m = t.match(/^\s*([^\s:(][^:(\n]{0,28}?)\s*(?:\(([^)\n]{1,80})\))?\s*:\s*/);
+      if (m && !/\d/.test(m[1]) && m[1].trim().split(/\s+/).length <= 3) { speaker = m[1].replace(/[*_]/g, '').trim(); mood = (m[2] || '').trim(); t = t.slice(m[0].length); lineEl = null; }
+      else if (t.trim()) { lineEl = null; mood = ''; }
     }
     atLineStart = endsLine;
     let clean = t.replace(/[*_#`]/g, '');
@@ -560,7 +796,7 @@ function makeStreamer() {
     if (clean.trim()) {
       if (!lineEl) lineEl = addLine(speaker, clean.trim() + ' ');
       else lineEl.appendChild(document.createTextNode(clean.trim() + ' '));
-      speak(speaker, clean, endsLine);
+      speak(speaker, clean, endsLine, mood);
     }
     if (endsLine) { lineEl = null; markLineEnd(); }
   }
@@ -578,9 +814,12 @@ function makeStreamer() {
       pending += text;
       for (;;) {
         // at a line start, wait until we can see the "Speaker:" prefix
-        if (atLineStart && pending.indexOf(':') === -1 && pending.indexOf('\n') === -1 && pending.length < 32) return;
+        if (atLineStart && pending.indexOf(':') === -1 && pending.indexOf('\n') === -1 && pending.length < 110) return;
         let m = pending.match(/^([\s\S]*?)(\n|[.!?…](?=\s))/);
-        if (!m && firstChunk && pending.length > 45) m = pending.match(/^([\s\S]{25,}?)(,)(?=\s)/); // start talking sooner
+        if (!m && firstChunk && pending.length > 45) {   // start talking sooner (but never cut inside the bracket after the speaker)
+          m = pending.match(/^([\s\S]{25,}?)(,)(?=\s)/);
+          if (m && (m[1].split('(').length !== m[1].split(')').length)) m = null;
+        }
         if (!m) return;
         firstChunk = false;
         const isNl = m[2] === '\n';
@@ -646,7 +885,7 @@ async function askClaudeInner(userText) {
         if (!dataLine) continue;
         let data; try { data = JSON.parse(dataLine.slice(6)); } catch { continue; }
         if (data.type === 'content_block_delta' && data.delta && data.delta.type === 'text_delta') {
-          if (first) { setStatus('Mluví Pán jeskyně…  (Esc = ticho)'); first = false; }
+          if (first) { setStatus('Mluví Pán jeskyně…  (Esc = ticho)'); first = false; if (tm.end && !tm.llm) tm.llm = performance.now(); }
           full += data.delta.text; streamer.feed(data.delta.text);
         } else if (data.type === 'error') {
           throw new Error(data.error && data.error.message || 'chyba streamu');
@@ -736,7 +975,7 @@ function stopListening() {
 }
 
 // ---------- Hands-free: always listening, also while the GM talks (barge-in) ----------
-function handsFreeOn() { return $('handsFree') && $('handsFree').checked && gameStarted; }
+function handsFreeOn() { return gameStarted; }   // always listening; no switch any more
 let gameStarted = false;
 const hf = { rec: null, skip: 0, el: null, silence: null, restartT: null, results: null };
 const STOP_WORDS = ['stop', 'stuj', 'pockej', 'pockat', 'dost', 'ticho', 'moment', 'zastav'];
@@ -805,7 +1044,6 @@ function hfEnsure() {
   r.onerror = ev => {
     if (ev.error === 'no-speech' || ev.error === 'aborted') return;
     micError(ev.error);
-    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') { $('handsFree').checked = false; store.set('handsFree', false); }
   };
   r.onend = () => {
     if (hf.rec !== r) return;
@@ -843,7 +1081,7 @@ async function getMicTrack() {
 function sttMode() { return $('stt').value; }
 const mic = { ctx: null, stream: null, proc: null, ready: false, starting: null,
   floor: 0.004, echoGain: 0.1, ratioSum: 0, ratioN: 0, speaking: false, aboveMs: 0, belowMs: 0, voicedMs: 0, segMs: 0,
-  frames: [], pre: [], barge: false, held: false, forced: false };
+  frames: [], pre: [], barge: false, held: false, forced: false, spec: null };
 
 async function startMic() {
   if (mic.ready) { if (mic.ctx.state !== 'running') mic.ctx.resume(); return true; }
@@ -911,7 +1149,12 @@ function onMicFrame(d) {
     return;
   }
   mic.frames.push(f); mic.segMs += fm;
-  if (lv > thr * 0.65) { mic.voicedMs += fm; mic.belowMs = 0; } else mic.belowMs += fm;
+  if (lv > thr * 0.65) { mic.voicedMs += fm; mic.belowMs = 0; mic.spec = null; } else mic.belowMs += fm;
+  // after a short silence start recognising already; if the player goes on talking, the result is thrown away
+  if (!mic.spec && !mic.forced && mic.belowMs >= 250 && mic.voicedMs >= 300) {
+    const req = googleStt(pcm16b64(mic.frames), mic.ctx.sampleRate); req.catch(() => {});
+    mic.spec = { voiced: mic.voicedMs, req };
+  }
   if (mic.barge) {
     if (!mic.held && mic.voicedMs > 120) duck(true);
     if (!mic.held && mic.voicedMs > 550) { mic.held = true; holdPJ(); setStatus('Poslouchám…'); }
@@ -923,28 +1166,31 @@ function onMicFrame(d) {
 function startSeg() {
   mic.speaking = true; mic.frames = mic.pre; mic.pre = [];
   mic.segMs = 0; mic.voicedMs = mic.aboveMs; mic.belowMs = 0; mic.ratioSum = 0; mic.ratioN = 0;
-  mic.barge = !mic.forced && pjActive(); mic.held = false;
+  mic.barge = !mic.forced && pjActive(); mic.held = false; mic.spec = null;
   if (!mic.barge) setStatus('Poslouchám…');
 }
 function endSeg(pushToTalk) {
   mic.speaking = false; mic.aboveMs = 0;
   const frames = mic.frames, barge = mic.barge, voiced = mic.voicedMs, forced = mic.forced || !!pushToTalk;
   const ratio = mic.ratioN ? mic.ratioSum / mic.ratioN : 0;
-  mic.frames = []; mic.barge = false; mic.held = false;
+  const spec = mic.spec && mic.spec.voiced === voiced ? mic.spec.req : null;
+  const waited = mic.belowMs;
+  mic.frames = []; mic.barge = false; mic.held = false; mic.spec = null;
   if (!forced && voiced < 300) { if (barge) resumePJ(); else if (!pjActive()) idleStatus(); return; } // a click or a cough
-  transcribeSeg(frames, barge, ratio);
+  tm = { end: performance.now(), silence: forced ? 0 : waited };
+  transcribeSeg(frames, barge, ratio, spec);
 }
 
 let sttChain = Promise.resolve();
-function transcribeSeg(frames, barge, ratio) {
-  const audio = pcm16b64(frames), sr = mic.ctx.sampleRate;
-  const req = googleStt(audio, sr).catch(e => { sttFailed(e); return ''; });
+function transcribeSeg(frames, barge, ratio, spec) {
+  const req = (spec || googleStt(pcm16b64(frames), mic.ctx.sampleRate)).catch(e => { sttFailed(e); return ''; });
   // results are handled strictly in the order people spoke
   sttChain = sttChain.then(() => req).then(text => handleHeard(text, barge, ratio));
 }
 
 function handleHeard(raw, barge, ratio) {
   raw = (raw || '').replace(/\s+/g, ' ').trim();
+  if (tm.end && !tm.stt) tm.stt = performance.now();
   // remove the GM's own words if the mic caught them (only matters while/just after it speaks)
   const nearPJ = barge || pjActive() || Date.now() - lastSpeechEnd < 2000;
   const seg = nearPJ ? stripEcho(raw) : raw;
@@ -1051,20 +1297,29 @@ function sendTyped() {
   $('typedInput').value = ''; $('typedInput').blur();
   interruptPJ();
   addLine('Vy', t, 'player');
+  tm = { end: performance.now(), silence: 0 };
   askClaude('Hráči: ' + t);
 }
 
 // ---------- Settings ----------
 $('apiKey').value = store.get('apiKey', '');
-$('engine').value = store.get('engine', 'mac');
+$('engine').value = store.get('engine', 'gemini');
+$('aiKey').value = store.get('aiKey', '');
+$('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
+$('aiModel').onchange = () => store.set('aiModel', $('aiModel').value);
+$('aiKey').onchange = () => { store.set('aiKey', $('aiKey').value.trim()); if (!aiVoices.length) loadAiVoices(true); };
+$('aiLoad').onclick = () => { store.set('aiKey', $('aiKey').value.trim()); loadAiVoices(false); };
+$('castAdd').onclick = () => { cast.splice(Math.max(0, cast.length - 1), 0, { role: 'Nová postava', voice: 'Puck', style: '' }); saveCast(); renderCast(); };
+$('castReset').onclick = () => { cast = JSON.parse(JSON.stringify(CAST_DEFAULT)); saveCast(); renderCast(); };
 $('elKey').value = store.get('elKey', '');
 $('gKey').value = store.get('gKey', '');
 gVoices = store.get('gVoices', []);
 elVoices = store.get('elVoices', []);
-function engineChanged() { $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = (engine() === 'google' || sttMode() === 'google') ? 'block' : 'none'; populateSelects(); showUsage(); }
+function engineChanged() { $('aiBox').style.display = engine() === 'gemini' ? 'block' : 'none'; $('roleBox').style.display = engine() === 'gemini' ? 'none' : 'block';
+  $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = (engine() === 'google' || sttMode() === 'google') ? 'block' : 'none'; populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
-$('endSilence').value = store.get('endSilence', 0.9);
+$('endSilence').value = store.get('endSilence', 0.6);
 $('micSens').value = store.get('micSens', 1);
 $('endSilenceVal').textContent = $('endSilence').value; $('micSensVal').textContent = $('micSens').value;
 $('endSilence').oninput = () => { $('endSilenceVal').textContent = $('endSilence').value; store.set('endSilence', parseFloat($('endSilence').value)); };
@@ -1080,10 +1335,11 @@ $('elReset').onclick = () => { store.set('chars_el', 0); showUsage(); };
 $('gLoad').onclick = () => { store.set('gKey', $('gKey').value.trim()); loadGVoices(); };
 loadVoices();
 engineChanged();
-$('model').value = store.get('model', 'claude-sonnet-5-5');
+renderCast();
+if ($('aiKey').value && !aiVoices.length) loadAiVoices(true);
+$('model').value = store.get('model', 'claude-haiku-5-5');
 $('rate').value = store.get('rate', 1);
 $('mapPause').value = store.get('mapPause', 3);
-$('handsFree').checked = store.get('handsFree', true);
 $('mapPauseVal').textContent = $('mapPause').value;
 $('mapPause').oninput = () => { $('mapPauseVal').textContent = $('mapPause').value; };
 $('rateVal').textContent = $('rate').value;
@@ -1092,11 +1348,13 @@ function saveSettings() {
   store.set('model', $('model').value);
   store.set('rate', parseFloat($('rate').value));
   store.set('mapPause', parseFloat($('mapPause').value));
-  store.set('handsFree', $('handsFree').checked);
   store.set('stt', sttMode());
   store.set('engine', engine());
   store.set('elKey', $('elKey').value.trim());
   store.set('gKey', $('gKey').value.trim());
+  store.set('aiKey', $('aiKey').value.trim());
+  store.set('aiModel', $('aiModel').value);
+  saveCast();
   for (const id of ROLE_SELECTS) if ($(id).value) store.set(id + '_' + engine(), $(id).value);
 }
 $('rate').oninput = () => { $('rateVal').textContent = $('rate').value; };
@@ -1104,19 +1362,21 @@ $('openSettings').onclick = () => $('settings').classList.add('open');
 $('closeSettings').onclick = () => { saveSettings(); $('settings').classList.remove('open'); idleStatus(); };
 $('testVoice').onclick = () => {
   saveSettings(); ensureOutCtx(); shutUp();
-  speak('Vypravěč', 'Venku prší a ve výčepu U Zlatého korbele je teplo.');
-  speak('Rádce', 'Hoď třemi kostkami a řekni mi součet.');
-  speak('Matouš', 'Vy vypadáte jako lidi, co se nebojí tmy.');
+  tm = { end: performance.now(), silence: 0, test: true };
+  speak('Vypravěč', 'Venku prší a ve výčepu U Zlatého korbele je teplo.', true);
+  speak('Rádce', 'Hoď třemi kostkami a řekni mi součet.', true);
+  speak('Matouš', 'Vy vypadáte jako lidi, co se nebojí tmy.', true);
 };
 $('startNew').onclick = () => $('newGame').onclick();
 $('startResume').onclick = () => $('resumeGame').onclick();
-function hideStart() { $('startBar').style.display = 'none'; }
+function hideStart() { $('startBar').style.display = 'none'; try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {} }
 $('newGame').onclick = () => {
   saveSettings();
   if (messages.length && !confirm('Smazat uloženou hru a začít znovu?')) return;
   messages = []; store.set('messages', messages); $('log').innerHTML = ''; hideStart(); gameStarted = true;
   $('settings').classList.remove('open');
   ensureOutCtx(); if (sttMode() === 'google') startMic();
+  tm = { end: performance.now(), silence: 0 };
   askClaude('(Hráči si sedli ke stolu. Začni hru.)');
 };
 $('resumeGame').onclick = () => {
