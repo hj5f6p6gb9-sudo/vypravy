@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. d</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. e</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -198,66 +198,76 @@ Výukové dobrodružství · 1–4 hráči · postavy 1. úrovně · cca 2 hodin
 
 ## Scéna 0: Výběr postav
 
-[PRO PJ] Postavy se v úvodu netvoří. Zeptej se, kdo dnes hraje. Pak nabídni čtyři hotové postavy přesně tímto textem:
+[DOSLOVA] Vypravěč: Vítejte u stolu, dobrodruzi. Připravte si papír, tužku a kostky.
+
+[DOSLOVA] Rádce: Kolik vás dnes hraje a jak se jmenujete?
+
+[PRO PJ] Na odpověď nijak nereaguj, nekomentuj jména ani počet. Rovnou nabídni postavy tímto textem:
 
 [DOSLOVA] Rádce: Na výběr jsou čtyři postavy. Borymir, trpaslík bojovník, vydrží nejvíc ran a bije válečnou sekerou. Pepin, půlčík tulák, je tichý, mrštný a střílí z luku. Bratr Ondřej, lidský klerik, léčí zranění a na kostlivce má palcát. Lianna, elfí kouzelnice, sesílá ohnivé šípy a magické střely. Za koho budete hrát?
 
-[PRO PJ] Hráč si postavu může přejmenovat. Když ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci, a ať si zatím vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj. Až mají všichni vybráno, nadiktuj každému hráči jeho kartu (viz níže) a potom začni scénu 1.
+[PRO PJ] Postavy se v úvodu netvoří. Hráč si postavu může přejmenovat. Když ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci, a ať si zatím vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj. Až mají všichni vybráno, nadiktuj každému hráči jeho kartu a potom začni scénu 1.
+
+[PRO PJ] Před první kartou řekni tento úvod (jméno a postavu doplň podle výběru). U dalších karet řekni jen první větu.
+
+[DOSLOVA] Rádce: Hraješ za trpaslíka bojovníka Borymira. Nadiktuju ti jeho kartu: nejdřív životy a obranu, potom zvláštní schopnosti, dovednosti a nakonec zbraně a vybavení. Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.
 
 Karta: Borymir, trpaslík bojovník
 [DIKTÁT]
-- Životy dvanáct.
-- Obrana osmnáct.
-- Válečná sekera, útok plus pět.
-- Zranění sekerou: jedna kostka plus čtyři.
-- Druhý dech: jednou do odpočinku si vyléčíš jednu kostku plus tři.
-- Atletika plus pět.
-- Vnímání plus tři.
-- Vidění ve tmě na dvanáct čtverečků.
-- Vybavení: lucerna, provaz a zásoby.
+- Nahoru si napiš jméno: Borymir, trpaslík bojovník.
+- Životy dvanáct. Tolik zranění vydržíš.
+- Obrana osmnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď zvláštní schopnost. Druhý dech: jednou za odpočinek se v boji nadechneš a vyléčíš si jednu kostku plus tři životy.
+- Další schopnost. Vidění ve tmě: vidíš potmě na dvanáct čtverečků.
+- Teď dovednosti, tedy v čem jsi dobrý. Atletika plus pět. To je šplhání, skákání a přetlačování.
+- Vnímání plus tři. To je všímání si stop a skrytých věcí.
+- Teď zbraně. Válečná sekera: útok plus pět, zranění jedna kostka plus čtyři.
+- A nakonec vybavení: lucerna, provaz a zásoby.
 [PRO PJ] Borymir: Síla +3, Obratnost +0, Odolnost +2, Inteligence +0, Moudrost +1, Charisma −1.
 
 Karta: Pepin, půlčík tulák
 [DIKTÁT]
-- Životy devět.
-- Obrana čtrnáct.
-- Krátký meč, útok plus pět.
-- Zranění mečem: jedna kostka plus tři.
-- Krátký luk, útok plus pět, dostřel šestnáct čtverečků.
-- Zranění lukem: jedna kostka plus tři.
-- Zákeřný útok: jedna kostka navíc, když máš výhodu nebo vedle cíle stojí spojenec. Jednou za kolo.
-- Šťastlivec: když ti padne pět nebo míň, házíš znovu.
-- Plížení plus pět.
-- Zručnost plus pět.
-- Vnímání plus tři.
+- Nahoru si napiš jméno: Pepin, půlčík tulák.
+- Životy devět. Tolik zranění vydržíš.
+- Obrana čtrnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď zvláštní schopnosti. Zákeřný útok: jedna kostka zranění navíc, když máš výhodu nebo vedle cíle stojí tvůj spojenec. Jednou za kolo.
+- Šťastlivec: když ti na kostkách padne pět nebo míň, házíš znovu.
+- Teď dovednosti, tedy v čem jsi dobrý. Plížení plus pět.
+- Zručnost plus pět. To je otvírání zámků a jemná práce rukama.
+- Vnímání plus tři. To je všímání si stop a skrytých věcí.
+- Teď zbraně. Krátký meč: útok plus pět, zranění jedna kostka plus tři.
+- Krátký luk: útok plus pět, zranění jedna kostka plus tři, dostřel šestnáct čtverečků.
+- A nakonec vybavení: zlodějské náčiní, provaz a zásoby.
 [PRO PJ] Pepin: Síla −1, Obratnost +3, Odolnost +1, Inteligence +1, Moudrost +1, Charisma +1.
 
 Karta: Bratr Ondřej, člověk klerik
 [DIKTÁT]
-- Životy deset.
-- Obrana sedmnáct.
-- Palcát, útok plus tři.
-- Zranění palcátem: jedna kostka plus jedna. Kostlivcům dvojnásob.
-- Posvátný plamen: kouzlo, hodíš za nestvůru. Zranění jedna kostka plus jedna.
-- Kouzla prvního stupně: dvě do odpočinku.
-- Léčivé slovo: na dálku vyléčí jednu kostku plus dva.
-- Léčení ran: dotykem vyléčí jednu kostku plus čtyři.
-- Medicína plus pět.
-- Náboženství plus dva.
+- Nahoru si napiš jméno: Bratr Ondřej, lidský klerik.
+- Životy deset. Tolik zranění vydržíš.
+- Obrana sedmnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď kouzla. Posvátný plamen: můžeš ho seslat kdykoli. Za nestvůru hodíš kostkami, a když neuspěje, dostane jednu kostku plus jedna zranění.
+- Silnější kouzla máš dvě do odpočinku. Vybíráš ze dvou.
+- Léčivé slovo: na dálku vyléčí jednu kostku plus dva životy.
+- Léčení ran: dotykem vyléčí jednu kostku plus čtyři životy.
+- Teď dovednosti, tedy v čem jsi dobrý. Medicína plus pět. To je ošetřování zraněných.
+- Náboženství plus dva. To jsou znalosti o bozích a nemrtvých.
+- Teď zbraně. Palcát: útok plus tři, zranění jedna kostka plus jedna. Kostlivcům dvojnásob.
+- A nakonec vybavení: svatý symbol, lucerna a zásoby.
 [PRO PJ] Bratr Ondřej: Síla +1, Obratnost +0, Odolnost +1, Inteligence +0, Moudrost +3, Charisma +1. Posvátný plamen: cílové číslo 13, záchrana Obratnosti nestvůry.
 
 Karta: Lianna, elfka kouzelnice
 [DIKTÁT]
-- Životy sedm.
-- Obrana dvanáct.
-- Ohnivý šíp, útok plus pět, dostřel dvacet čtyři čtverečků.
-- Zranění ohnivým šípem: jedna kostka plus dva.
-- Kouzla prvního stupně: dvě do odpočinku.
+- Nahoru si napiš jméno: Lianna, elfí kouzelnice.
+- Životy sedm. Tolik zranění vydržíš.
+- Obrana dvanáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď kouzla. Ohnivý šíp: můžeš ho seslat kdykoli. Útok plus pět, zranění jedna kostka plus dva, dostřel dvacet čtyři čtverečků.
+- Silnější kouzla máš dvě do odpočinku. Vybíráš ze dvou.
 - Magická střela: tři střely, každá vždy zasáhne za jednu kostku.
-- Štít: po nepovedeném obranném hodu plus pět do konce kola.
-- Arkána plus pět.
-- Historie plus pět.
-- Vidění ve tmě na dvanáct čtverečků.
+- Štít: když se ti nepovede obranný hod, přičteš si plus pět do konce kola.
+- Další schopnost. Vidění ve tmě: vidíš potmě na dvanáct čtverečků.
+- Teď dovednosti, tedy v čem jsi dobrá. Arkána plus pět. To jsou znalosti o magii.
+- Historie plus pět. To jsou znalosti o starých časech a národech.
+- A nakonec vybavení: kniha kouzel, hůl a zásoby.
 [PRO PJ] Lianna: Síla −1, Obratnost +2, Odolnost +1, Inteligence +3, Moudrost +1, Charisma +0.
 
 ## Scéna 1: Výčep U Zlatého korbele
@@ -396,6 +406,8 @@ SCÉNÁŘ JE ZÁVAZNÝ (nejdůležitější pravidlo):
 - Text [PRO PJ] hráčům nečti. Je to podklad, podle kterého odpovídáš.
 - Vlastními slovy mluv jen tehdy, když hráči řeknou nebo udělají něco, na co scénář doslovný text nemá. I pak se drž faktů ze scénáře a nic si nepřimýšlej: žádné nové postavy, předměty, místnosti, sliby ani odměny. Když scénář odpověď nezná, postava to prostě neví.
 
+RÁDCE JE VĚCNÝ: Rádce nevtipkuje, nekomentuje, co hráč řekl, a nepřidává poznámky ani pozdravy navíc. Řekne jen to, co je potřeba k dalšímu kroku. Rozpoznávání řeči občas zkomolí slova (třeba „v postavě“ na „v posteli“); divná nebo nesouvisející slova v řeči hráče tiše přejdi a nereaguj na ně. Vtip a barvitost patří jen postavám a Vypravěči, a i tam jen podle scénáře.
+
 HRÁČI ROZHODUJÍ:
 - Nikdy nerozhoduj za postavy hráčů a nepopisuj, co dělají, dokud to sami neřeknou. Nepřesouvej je do další místnosti ani scény, dokud neřeknou, že tam jdou.
 - Když postava něco nabídne nebo se na něco zeptá, domluv a čekej na odpověď hráčů.
@@ -418,7 +430,7 @@ FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 - „Zopakuj“ = zopakuj poslední popis. „Stop“ = odpověz jen „Rádce: Čekám.“ „Pokračuj“ = pokračuj, kde jste skončili.
 
 DIKTOVÁNÍ (karta postavy, mapa, odměny, cokoli k zapsání nebo zakreslení) probíhá vždycky stejně:
-- Nejdřív jedním řádkem „Rádce:“ řekni, co budeš diktovat (např. „Hraješ za trpaslíka bojovníka Borymira. Nadiktuju ti jeho kartu.“). Při úplně prvním diktování ve hře přidej větu: „Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.“ Později už ji neopakuj.
+- Nejdřív jedním řádkem „Rádce:“ řekni, co budeš diktovat a z jakých částí se to skládá (u karty postavy použij doslovný úvod ze scénáře; u mapy např. „Nadiktuju ti mapu sklepa.“). Při úplně prvním diktování ve hře zazní věta: „Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.“ Později už ji neopakuj.
 - Pak napiš každý údaj na samostatný řádek, který začíná „Diktát:“. Jeden krátký údaj = jeden řádek. Napiš všechny řádky najednou; aplikace sama po každém řádku počká, až hráč řekne „dál“, a umí řádek zopakovat.
 - Za poslední řádek „Diktát:“ už nic dalšího nepiš. Aplikace ti dá vědět, až bude všechno zapsané, a teprve pak pokračuj.
 - Když ti aplikace napíše, že hráč během diktování promluvil, krátce odpověz a zbylé řádky nadiktuj znovu stejným způsobem.
@@ -435,7 +447,7 @@ SEŠIT HRÁČE: každý hráč si vede postavu v sešitě, ale pravdu držíš t
 
 STÁLÝ POSLECH: aplikace poslouchá celý stůl pořád, i když mluvíš ty. Když zpráva hráčů zjevně není určená do hry (bavíte se mimo hru, např. „podej mi pivo“, „kdy je večeře“) nebo je to jen útržek bez smyslu, odpověz přesně „(ticho)“ a nic jiného.
 
-ZAČÁTEK HRY: jednou dvěma větami přivítej hráče a zeptej se, kdo dnes hraje. Pak pokračuj scénou 0 přesně podle scénáře. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě. Pak hraj.
+ZAČÁTEK HRY: začni scénou 0 přesně podle scénáře, včetně doslovného přivítání. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě.
 
 DOBRODRUŽSTVÍ:
 `;
@@ -825,8 +837,7 @@ function quotaHit() {   // the free limit of the new voices ran out: pause them 
   aiBlockedUntil = Date.now() + 60000;
   if (Date.now() - quotaWarned < 120000) return;
   quotaWarned = Date.now();
-  addLine('Chyba', 'Nové hlasy narazily na limit bezplatného účtu v AI Studiu. ' + ($('gKey').value.trim() ? 'Minutu budou mluvit starší hlasy, pak to zkusím znovu. ' : '') +
-    'Trvalé řešení: v AI Studiu zapnout u projektu platby (Billing).', 'err');
+  addLine('Chyba', 'Nové hlasy narazily na limit počtu požadavků v AI Studiu. ' + ($('gKey').value.trim() ? 'Minutu budou mluvit starší hlasy, pak to zkusím znovu.' : 'Za minutu to zkusím znovu.'), 'err');
 }
 function playUrl(url, gen) {
   return new Promise(res => {
@@ -846,26 +857,32 @@ function makeItem(role, text, provider, mood) {
   }
   const k = 'chars_' + provider;
   store.set(k, store.get(k, 0) + text.length); showUsage();
+  return { role, text, mood, provider, voiceId, pauseAfter: 0 };
+}
+// The request for the sound is sent only when the line is about to be spoken (or is next in the queue),
+// so a long dictation does not fire ten requests in one second and hit the per-minute limit.
+function startItem(item) {
+  if (!item || item.gate || item.started) return;
+  item.started = true;
+  const { role, text, mood, provider, voiceId } = item;
   if (provider === 'gemini' && Date.now() < aiBlockedUntil) {
-    if (!$('gKey').value.trim()) return null;
-    const p = fetchAudio('google', chirpFor(role), text); p.catch(() => {});
+    if (!$('gKey').value.trim()) { item.p = Promise.reject(Object.assign(new Error('limit'), { name: 'AbortError' })); item.p.catch(() => {}); return; }
+    item.p = fetchAudio('google', chirpFor(role), text); item.p.catch(() => {});
     logEv('HLAS', 'starší hlas (limit nových hlasů)');
-    return { p, role, text, pauseAfter: 0 };
-  }
-  if (provider === 'gemini') {
+  } else if (provider === 'gemini') {
     const c = castFor(role);
     const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
-    return { stream: geminiStream(c.voice, style, text), role, text, pauseAfter: 0 };
+    item.stream = geminiStream(c.voice, style, text);
+  } else {
+    item.p = fetchAudio(provider, voiceId, text); item.p.catch(() => {}); // reported when played
   }
-  const p = fetchAudio(provider, voiceId, text);
-  p.catch(() => {}); // reported when played
-  return { p, role, text, pauseAfter: 0 };
 }
 function cloudSpeak(role, text, provider, endsLine, mood) {
   const item = makeItem(role, text, provider, mood);
   if (!item) return;
   speakQueueCount++; rememberPJ(text);
   elQueue.push(item);
+  if (elQueue.find(i => !i.gate) === item) startItem(item);
   if (!elPlaying) playNext(elGen);
 }
 
@@ -911,7 +928,9 @@ async function playNext(gen) {
   if (gen !== elGen) return;
   if (!elQueue.length) { elPlaying = false; return; }
   elPlaying = true;
-  const item = elQueue.shift(); const p = item.p;
+  const item = elQueue.shift();
+  startItem(item); startItem(elQueue.find(i => !i.gate));
+  const p = item.p;
   if (item.gate) {
     if (dictSkip) dictSkip = false;
     else {
