@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. e</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. f</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -661,7 +661,8 @@ async function loadAiVoices(quiet) {
 }
 
 // One streamed speech request. Audio arrives in pieces (raw 16-bit sound) and is played as it comes.
-let aiFmt = store.get('aiFmt', 0), aiVoiceWarned = false;
+let aiFmtBy = store.get('aiFmtBy', {}), aiVoiceWarned = false, aiModelBlocked = {}, aiLastModel = '';
+const AI_MODELS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
 function aiBody(fmt, voice, style, text) {
   if (fmt === 0) return { contents: [{ role: 'user', parts: [style ? { text, speech_metadata: { style } } : { text }] }],
     generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { voice } } } };
@@ -670,21 +671,37 @@ function aiBody(fmt, voice, style, text) {
 }
 function geminiStream(voice, style, text) {
   const st = { chunks: [], done: false, err: null, rate: 24000, onData: null };
-  const key = $('aiKey').value.trim(), model = $('aiModel').value, signal = elAbort.signal;
-  const call = (fmt, v) => fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
+  const key = $('aiKey').value.trim(), signal = elAbort.signal;
+  const call = (model, fmt, v) => fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
     method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(aiBody(fmt, v, style, text)) });
   (async () => {
-    let v = aiVoiceId(voice), res = await call(aiFmt, v);
-    if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // unknown voice from the library
-      const why = (await res.text()).slice(0, 160);
-      if (!aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení dej „Načíst všechny hlasy z AI Studia“ a vyber ho znovu.', 'err'); }
-      v = AI_FALLBACK_VOICE; res = await call(aiFmt, v);
+    // Each voice model has its own small daily and per-minute allowance, so when one runs out we move on to the next.
+    const models = [$('aiModel').value].concat(AI_MODELS.filter(m => m !== $('aiModel').value)).filter(m => Date.now() >= (aiModelBlocked[m] || 0));
+    let res = null, lastErr = null;
+    for (const model of models) {
+      let v = aiVoiceId(voice), fmt = aiFmtBy[model] || 0;
+      res = await call(model, fmt, v);
+      if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
+        const why = (await res.text()).slice(0, 160);
+        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '.', 'err'); }
+        v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
+      }
+      if (!res.ok && res.status === 400 && fmt === 0) {   // older request format
+        const res2 = await call(model, 1, v);
+        if (res2.ok) { aiFmtBy[model] = 1; store.set('aiFmtBy', aiFmtBy); res = res2; }
+      }
+      if (res.ok) { if (model !== $('aiModel').value && aiLastModel !== model) logEv('HLAS', 'mluví náhradní model hlasu ' + model); aiLastModel = model; break; }
+      const body = (await res.text()).slice(0, 400);
+      lastErr = Object.assign(new Error('Nové hlasy ' + res.status + ': ' + body.slice(0, 250)), { status: res.status });
+      if (res.status === 429) {
+        const daily = /per.?day|daily/i.test(body);
+        aiModelBlocked[model] = Date.now() + (daily ? 30 * 60000 : 60000);
+        logEv('HLAS', 'model ' + model + ' je na limitu (' + (daily ? 'denním' : 'minutovém') + ')');
+      } else if (res.status === 404 || res.status === 400) aiModelBlocked[model] = Date.now() + 30 * 60000;   // model not available for this key
+      else break;
+      res = null;
     }
-    if (!res.ok && res.status === 400 && aiFmt === 0) {   // older request format
-      const res2 = await call(1, v);
-      if (res2.ok) { aiFmt = 1; store.set('aiFmt', 1); res = res2; }
-    }
-    if (!res.ok) { const e = new Error('Nové hlasy ' + res.status + ': ' + (await res.text()).slice(0, 250)); e.status = res.status; throw e; }
+    if (!res || !res.ok) throw lastErr || Object.assign(new Error('Nové hlasy: všechny modely jsou na limitu.'), { status: 429 });
     const reader = res.body.getReader(), dec = new TextDecoder();
     let buf = '', odd = null, first = true;
     const take = b64 => {
