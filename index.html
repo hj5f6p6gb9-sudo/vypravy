@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. f</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. g</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -662,6 +662,7 @@ async function loadAiVoices(quiet) {
 
 // One streamed speech request. Audio arrives in pieces (raw 16-bit sound) and is played as it comes.
 let aiFmtBy = store.get('aiFmtBy', {}), aiVoiceWarned = false, aiModelBlocked = {}, aiLastModel = '';
+const aiBadVoices = {};
 const AI_MODELS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
 function aiBody(fmt, voice, style, text) {
   if (fmt === 0) return { contents: [{ role: 'user', parts: [style ? { text, speech_metadata: { style } } : { text }] }],
@@ -680,10 +681,12 @@ function geminiStream(voice, style, text) {
     let res = null, lastErr = null;
     for (const model of models) {
       let v = aiVoiceId(voice), fmt = aiFmtBy[model] || 0;
+      if (aiBadVoices[model + '|' + v]) v = AI_FALLBACK_VOICE;   // already known not to work: do not waste a request on it
       res = await call(model, fmt, v);
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
         if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '.', 'err'); }
+        aiBadVoices[model + '|' + v] = true;
         v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
       }
       if (!res.ok && res.status === 400 && fmt === 0) {   // older request format
@@ -905,7 +908,7 @@ function cloudSpeak(role, text, provider, endsLine, mood) {
 
 // ---------- Dictation: one line, then wait until the player says "dál" ----------
 const DICT_MOOD = 'pomalu a zřetelně, diktuješ k zapsání';
-const DICT_NEXT = ['dal', 'dale', 'dalsi', 'pokracuj', 'pokracujeme', 'mam', 'hotovo', 'zapsano', 'napsano', 'muzes', 'muzeme', 'jedeme', 'ok', 'jo', 'ano'];
+const DICT_NEXT = ['dal', 'dale', 'dalsi', 'pokracuj', 'pokracujeme', 'pokracovat', 'pokracuje', 'dobre', 'jasne', 'mam', 'hotovo', 'zapsano', 'napsano', 'muzes', 'muzeme', 'jedeme', 'ok', 'jo', 'ano'];
 const DICT_REPEAT = ['zopakuj', 'opakuj', 'znovu', 'jeste', 'coze', 'nestihl', 'nerozumel'];
 const DICT_ASK = ['co', 'kolik', 'jak', 'proc', 'kde', 'kdy', 'ktery', 'ktera', 'znamena', 'radce', 'pane', 'pockej', 'stop', 'nechci', 'chci'];
 let dictGate = null, dictSkip = false;
@@ -926,19 +929,22 @@ function dictHeard(raw) {
   const seg = stripEcho(raw), words = norm(seg);
   if (!words.length) return;
   const has = list => words.some(w => list.includes(w));
-  if (words.length <= 4 && has(DICT_REPEAT)) { if (dictGate) dictRepeat(); return; }
+  if (words.length <= 9 && has(DICT_REPEAT)) { if (dictGate) dictRepeat(); return; }
   if (words.length <= 3 && has(DICT_NEXT)) {
+    if (!dictGate) { logEv('DIKTÁT', 'ignorováno („dál“ dřív, než řádek dozněl): ' + seg); return; }
     addLine('Stůl', seg, 'player'); logEv('DIKTÁT', 'dál');
     tm = { end: performance.now(), silence: 0 };
-    if (dictGate) dictGate.res(); else dictSkip = true;
+    dictGate.res();
     return;
   }
   if (!(words.length >= 5 || /\?/.test(raw) || has(DICT_ASK))) { logEv('DIKTÁT', 'ignorováno (mumlání při psaní): ' + seg); return; }
-  const cur = dictGate ? dictGate.text : '', rest = elQueue.filter(i => i.gate).map(i => i.text);
+  // the line the player was on counts as not written yet, so it is dictated again after the answer
+  const rest = (dictGate ? [dictGate.text] : []).concat(elQueue.filter(i => i.gate).map(i => i.text));
   interruptPJ();
   addLine('Stůl', seg, 'player');
-  askClaude('Hráči: ' + seg + '\n(Poznámka aplikace: hráč promluvil během diktování' + (cur ? ' u řádku „' + cur + '“' : '') + '. ' +
-    (rest.length ? 'Ještě zbývá nadiktovat: ' + rest.join(' | ') + ' ' : 'Všechny řádky už zazněly. ') + 'Krátce odpověz a pak pokračuj.)');
+  askClaude('Hráči: ' + seg + '\n(Poznámka aplikace: hráč promluvil během diktování. ' +
+    (rest.length ? 'Ještě není zapsáno a zbývá nadiktovat, v tomto pořadí: ' + rest.join(' | ') + ' Odpověz jedním krátkým řádkem „Rádce:“ a potom znovu nadiktuj všechny tyto řádky jako „Diktát:“, první z nich včetně.)'
+                 : 'Všechny řádky už jsou zapsané. Krátce odpověz a pokračuj ve hře.)'));
 }
 
 async function playNext(gen) {
