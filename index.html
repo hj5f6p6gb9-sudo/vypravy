@@ -57,8 +57,12 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. c</span></h1>
-    <button id="openSettings">Nastavení</button>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. d</span></h1>
+    <span style="display:flex;gap:8px">
+      <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
+      <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
+      <button id="openSettings">Nastavení</button>
+    </span>
   </header>
   <div id="status">Začni novou hru, nebo pokračuj v uložené.</div>
   <div id="meter" title="Hladina mikrofonu"><div id="meterFill"></div></div>
@@ -102,8 +106,8 @@
       <summary style="cursor:pointer;color:var(--dim)">Další nastavení (obvykle není potřeba)</summary>
       <label>Mozek Pána jeskyně</label>
       <select id="model">
-        <option value="claude-haiku-5-5">Claude Haiku 5.5 – rychlejší odpovědi (výchozí)</option>
-        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 – chytřejší, o něco pomalejší</option>
+        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 – chytřejší (výchozí)</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 – rychlejší, ale dělá víc chyb</option>
       </select>
       <label>Model hlasu</label>
       <select id="aiModel">
@@ -166,117 +170,236 @@
 
 <script type="text/plain" id="adventure"># Sklep U Zlatého korbele
 
-Výukové dobrodružství · 2–4 hráči · postavy 1. úrovně · cca 2 hodiny
+Výukové dobrodružství · 1–4 hráči · postavy 1. úrovně · cca 2 hodiny
+
+## Jak číst tento scénář
+
+- [DOSLOVA] = povinný text. Řekni ho přesně tak, jak je napsaný, uvedeným mluvčím, celý a jen jednou.
+- [DIKTÁT] = údaje k zapsání nebo zakreslení. Nadiktuj je přesně a ve stejném pořadí, každý jako samostatný řádek „Diktát:“.
+- [PRO PJ] = podklady jen pro tebe. Hráčům je nečti. Podle nich odpovídáš, když hráči udělají něco, na co doslovný text není.
 
 ## 0. Přehled pro Pána jeskyně
 
-Zápletka: Hostinskému Matoušovi z hospody U Zlatého korbele mizí ze sklepa zásoby a v noci odtamtud slyší škrábání. Hospoda stojí na zbytcích skladiště trpasličího kupce Hrudomíra. Za zdí sklepa je zapomenutá komora a krypta. Poklad dodnes hlídá kostlivec strážce. Přes puklinu ve zdi se dovnitř dostaly obří krysy.
+[PRO PJ] Zápletka: Hostinskému Matoušovi z hospody U Zlatého korbele mizí ze sklepa zásoby a v noci odtamtud slyší škrábání. Hospoda stojí na zbytcích skladiště trpasličího kupce Hrudomíra. Za zdí sklepa je zapomenutá komora a krypta. Poklad dodnes hlídá kostlivec strážce. Přes puklinu ve zdi se dovnitř dostaly obří krysy.
 
-Scény: 0. Výběr postav · 1. Výčep (mluvení za postavu, zkouška) · 2. Sklep se sudy (diktování mapy, Vnímání, první boj, obranný hod) · 3. Stará komora (průzkum, skrytá věc – páčidlo) · 4. Krypta (hádanka, pomoc spolubojovníka = výhoda) · 5. Pokladnice (boj nebo řešení bez boje, poklad)
+[PRO PJ] Scény: 0. Výběr postav · 1. Výčep · 2. Sklep se sudy (první mapa, Vnímání, první boj, obranný hod) · 3. Stará komora (průzkum, skrytá věc – páčidlo) · 4. Krypta (hádanka, pomoc spolubojovníka = výhoda) · 5. Pokladnice (boj nebo řešení bez boje, poklad)
 
-### Základní pravidla vedení
-- Hody: hráč hlásí jen součet kostek, bonus přičte PJ. Při prvním hodu to Rádce připomene.
+[PRO PJ] Základní pravidla vedení
+- Hody: hráč hlásí jen součet kostek, bonus přičteš ty. Nikdy po hráči nechtěj, aby něco přičítal.
 - Hráči házejí všechno, nestvůry nehází nikdy:
-  - Když nestvůra útočí, napadená postava si hodí obranný hod 3k6 + (Obrana − 10) proti 12 + útočný bonus nestvůry. PJ jí rovnou řekne, kolik musí padnout na kostkách. Zranění nestvůr je pevné.
-  - Když postava sešle kouzlo, proti kterému se nestvůra brání záchranou, hodí za nestvůru hráč: 3k6 + záchranný bonus nestvůry. Nestvůra se ubrání, když dosáhne cílového čísla kouzla.
-- Diktování mapy: při vstupu do místnosti nejdřív Vypravěč 2–3 věty atmosféry. Pak Rádce diktuje mapu po jednotlivých bodech, každý bod na samostatný řádek (aplikace mezi nimi dělá pauzu na kreslení). Směry vztažené k papíru (horní / dolní / levá / pravá), sever je nahoře.
-- Povely: „Stop“ pozastaví hru, „Pokračuj“ ji rozběhne, „Zopakuj“ zopakuje poslední popis.
-- Nápovědy: u hádanky stačí 2 stupně. Skrytá řešení (páčidlo, prsten) nenapovídat víc, než je uvedeno.
+  - Když nestvůra útočí, napadená postava si hodí obranný hod. Řekni hráči rovnou, kolik musí padnout na třech kostkách. Zranění nestvůr je pevné.
+  - Když postava sešle kouzlo, proti kterému se nestvůra brání záchranou, hodí za nestvůru hráč třemi kostkami; ty přičteš záchranný bonus nestvůry.
+- Nápovědy: jen ty, které jsou u scény uvedené, a jen když se hráči zaseknou nebo o ně požádají. Skrytá řešení (páčidlo, prsten) nenapovídat víc, než je uvedeno.
 
-### Počet nestvůr podle velikosti družiny
+[PRO PJ] Počet nestvůr podle velikosti družiny
 - 1–2 postavy: sklep 1 obří krysa; pokladnice kostlivec
 - 3 postavy: sklep 2 obří krysy; pokladnice kostlivec + 1 krysa
 - 4 postavy: sklep 3 obří krysy; pokladnice kostlivec + 2 krysy
 
 ## Scéna 0: Výběr postav
 
-Postavy se v úvodu netvoří. Každý hráč si vybere jednu ze čtyř hotových postav níže a může si ji přejmenovat. Při nabídce řekni u každé postavy jen jméno, kdo to je a co umí, jednou větou a BEZ ČÍSEL (např. „Borymir, trpaslík bojovník, vydrží nejvíc ran a bije sekerou“). Životy, obranu ani bonusy při nabídce neříkej. Teprve když mají všichni hráči vybráno, Rádce každému nadiktuje jeho postavu k zapsání do sešitu: po krátkých řádcích (každý řádek začíná „Rádce:“) životy, obranu, útok a zranění, zvláštní schopnost a dovednosti, aby se to stihlo psát. Když hráč ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci a zatím ať si vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj.
+[PRO PJ] Postavy se v úvodu netvoří. Zeptej se, kdo dnes hraje. Pak nabídni čtyři hotové postavy přesně tímto textem:
 
-Trpaslík bojovník (navrhované jméno Borymir): Životy 12 · Obrana 18 (kroužková zbroj a štít) · Síla +3, Obratnost +0, Odolnost +2, Inteligence +0, Moudrost +1, Charisma −1 · Válečná sekera útok +5, zranění k6+4 · Druhý dech: jednou do odpočinku vyléčí k6+3 · Atletika +5, Vnímání +3 · Vidění ve tmě 12 čtverečků · lucerna, provaz, zásoby.
+[DOSLOVA] Rádce: Na výběr jsou čtyři postavy. Borymir, trpaslík bojovník, vydrží nejvíc ran a bije válečnou sekerou. Pepin, půlčík tulák, je tichý, mrštný a střílí z luku. Bratr Ondřej, lidský klerik, léčí zranění a na kostlivce má palcát. Lianna, elfí kouzelnice, sesílá ohnivé šípy a magické střely. Za koho budete hrát?
 
-Půlčík tulák (Pepin): Životy 9 · Obrana 14 (kožená zbroj) · Síla −1, Obratnost +3, Odolnost +1, Inteligence +1, Moudrost +1, Charisma +1 · Krátký meč útok +5, zranění k6+3 · Krátký luk útok +5, zranění k6+3, dostřel 16 čtverečků · Zákeřný útok +k6, když má výhodu nebo vedle cíle stojí spojenec (jednou za kolo) · Šťastlivec: když hodí 5 nebo méně, hází znovu · Plížení +5, Zručnost +5, Vnímání +3.
+[PRO PJ] Hráč si postavu může přejmenovat. Když ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci, a ať si zatím vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj. Až mají všichni vybráno, nadiktuj každému hráči jeho kartu (viz níže) a potom začni scénu 1.
 
-Člověk klerik – léčitel (Bratr Ondřej): Životy 10 · Obrana 17 (šupinová zbroj a štít) · Síla +1, Obratnost +0, Odolnost +1, Inteligence +0, Moudrost +3, Charisma +1 · Palcát útok +3, zranění k6+1 (drtivý, kostlivcům dvojnásob) · Posvátný plamen: cílové číslo 13, hráč hodí za nestvůru záchranu Obratnosti, když nedosáhne 13, nestvůra utrží k6+1 · Kouzla 1. stupně 2× do odpočinku: Léčivé slovo (na dálku k6+2), Léčení ran (dotykem k6+4) · Medicína +5, Náboženství +2.
+Karta: Borymir, trpaslík bojovník
+[DIKTÁT]
+- Životy dvanáct.
+- Obrana osmnáct.
+- Válečná sekera, útok plus pět.
+- Zranění sekerou: jedna kostka plus čtyři.
+- Druhý dech: jednou do odpočinku si vyléčíš jednu kostku plus tři.
+- Atletika plus pět.
+- Vnímání plus tři.
+- Vidění ve tmě na dvanáct čtverečků.
+- Vybavení: lucerna, provaz a zásoby.
+[PRO PJ] Borymir: Síla +3, Obratnost +0, Odolnost +2, Inteligence +0, Moudrost +1, Charisma −1.
 
-Elf kouzelník (Lianna): Životy 7 · Obrana 12 · Síla −1, Obratnost +2, Odolnost +1, Inteligence +3, Moudrost +1, Charisma +0 · Ohnivý šíp útok +5, zranění k6+2, dostřel 24 čtverečků · Kouzla 1. stupně 2× do odpočinku: Magická střela (3 střely, každá vždy zasáhne za k6), Štít (po neúspěšném obranném hodu +5 do konce kola) · Arkána +5, Historie +5 · Vidění ve tmě 12 čtverečků.
+Karta: Pepin, půlčík tulák
+[DIKTÁT]
+- Životy devět.
+- Obrana čtrnáct.
+- Krátký meč, útok plus pět.
+- Zranění mečem: jedna kostka plus tři.
+- Krátký luk, útok plus pět, dostřel šestnáct čtverečků.
+- Zranění lukem: jedna kostka plus tři.
+- Zákeřný útok: jedna kostka navíc, když máš výhodu nebo vedle cíle stojí spojenec. Jednou za kolo.
+- Šťastlivec: když ti padne pět nebo míň, házíš znovu.
+- Plížení plus pět.
+- Zručnost plus pět.
+- Vnímání plus tři.
+[PRO PJ] Pepin: Síla −1, Obratnost +3, Odolnost +1, Inteligence +1, Moudrost +1, Charisma +1.
+
+Karta: Bratr Ondřej, člověk klerik
+[DIKTÁT]
+- Životy deset.
+- Obrana sedmnáct.
+- Palcát, útok plus tři.
+- Zranění palcátem: jedna kostka plus jedna. Kostlivcům dvojnásob.
+- Posvátný plamen: kouzlo, hodíš za nestvůru. Zranění jedna kostka plus jedna.
+- Kouzla prvního stupně: dvě do odpočinku.
+- Léčivé slovo: na dálku vyléčí jednu kostku plus dva.
+- Léčení ran: dotykem vyléčí jednu kostku plus čtyři.
+- Medicína plus pět.
+- Náboženství plus dva.
+[PRO PJ] Bratr Ondřej: Síla +1, Obratnost +0, Odolnost +1, Inteligence +0, Moudrost +3, Charisma +1. Posvátný plamen: cílové číslo 13, záchrana Obratnosti nestvůry.
+
+Karta: Lianna, elfka kouzelnice
+[DIKTÁT]
+- Životy sedm.
+- Obrana dvanáct.
+- Ohnivý šíp, útok plus pět, dostřel dvacet čtyři čtverečků.
+- Zranění ohnivým šípem: jedna kostka plus dva.
+- Kouzla prvního stupně: dvě do odpočinku.
+- Magická střela: tři střely, každá vždy zasáhne za jednu kostku.
+- Štít: po nepovedeném obranném hodu plus pět do konce kola.
+- Arkána plus pět.
+- Historie plus pět.
+- Vidění ve tmě na dvanáct čtverečků.
+[PRO PJ] Lianna: Síla −1, Obratnost +2, Odolnost +1, Inteligence +3, Moudrost +1, Charisma +0.
 
 ## Scéna 1: Výčep U Zlatého korbele
 
-Vypravěč: Venku prší a ve výčepu U Zlatého korbele je teplo. Krb praská, voní pečené maso a pivo. Za pultem stojí hostinský Matouš, zavalitý muž s pleší a utěrkou přes rameno. Nervózně si vás prohlíží, pak se nakloní přes pult. „Vy vypadáte jako lidi, co se nebojí tmy. Nechcete si vydělat?“
+[DOSLOVA] Vypravěč: Venku prší a ve výčepu U Zlatého korbele je teplo. Krb praská, voní pečené maso a pivo. Za pultem stojí hostinský Matouš, zavalitý muž s pleší a utěrkou přes rameno. Nervózně si vás prohlíží a pak se nakloní přes pult.
 
-Matouš: dva týdny mu mizí zásoby (uzené, sýry, prohryzané pytle mouky). V noci slyší ze sklepa škrábání. Jednou viděl krysu velkou jako pes a utekl. Nabízí 5 zlatých každému a večeři zdarma. Ví, že škrábání se ozývá od regálu vzadu. Víc neví.
+[DOSLOVA] Matouš: Vy vypadáte jako lidi, co se nebojí tmy. Nechcete si vydělat?
 
-Smlouvání: Přesvědčování nebo Charisma proti 12. Úspěch = 10 zlatých každému.
+[PRO PJ] Tady počkej na odpověď hráčů. Když se zeptají, oč jde, nebo projeví zájem, Matouš řekne:
+
+[DOSLOVA] Matouš: Už dva týdny mi ze sklepa mizí zásoby. Uzené, sýry, pytle s moukou mám prohryzané. A v noci tam dole něco škrábe. Jednou jsem viděl krysu velkou jako pes, a to jsem vzal nohy na ramena. Když mi sklep vyčistíte, dám každému pět zlatých a večeři k tomu.
+
+[PRO PJ] Zase počkej. Co Matouš ví, když se hráči ptají: škrábání se ozývá od regálu vzadu ve sklepě; hospodu má po dědovi; víc neví. Nic dalšího si nevymýšlej.
+[PRO PJ] Smlouvání jen tehdy, když si hráč sám řekne o víc peněz: hod proti 12, přičti Charisma postavy. Sám smlouvání nenabízej.
+
+[DOSLOVA] (jen při úspěšném smlouvání) Matouš: No dobrá, dobrá. Deset zlatých každému. Ale ať je tam dole do rána ticho.
+
+[DOSLOVA] (jen při neúspěšném smlouvání) Matouš: Víc nemám, lidi. Pět zlatých a večeře, to je poctivá nabídka.
+
+[PRO PJ] Když hráči práci přijmou:
+
+[DOSLOVA] Matouš: Schody do sklepa jsou tady za pultem. Lucernu si vezměte, je tam tma jako v pytli.
+
+[PRO PJ] Do sklepa hráče nepřesouvej, dokud sami neřeknou, že jdou dolů. Odměnu si hráči zapíšou až na konci, až ji dostanou.
 
 ## Scéna 2: Sklep se sudy
 
-Mapa (6 široký × 8 vysoký): schody v levém dolním rohu; sudy podél celé pravé stěny kromě posledního čtverečku dole; regál u horní stěny, třetí čtvereček zleva; za regálem díra 1 čtvereček, vede nahoru do komory.
+[PRO PJ] Mapa (6 široký × 8 vysoký): schody v levém dolním rohu; sudy podél celé pravé stěny kromě posledního čtverečku dole; regál u horní stěny, třetí čtvereček zleva; za regálem díra 1 čtvereček, vede nahoru do komory.
 
-Vypravěč: Úzké schody vás vyvedou do nízkého klenutého sklepa. Je tu cítit plíseň a ještě něco štiplavého, jako zvířecí doupě.
+[DOSLOVA] Vypravěč: Úzké schody vás svedou do nízkého klenutého sklepa. Je tu cítit plíseň a ještě něco štiplavého, jako zvířecí doupě.
 
-Rádce diktuje mapu po bodech: 1) „Sklep je první místnost, nakresli ho do spodní části papíru. Má 6 čtverečků na šířku a 8 na výšku.“ 2) „Schody, kudy jste přišli, jsou v levém dolním rohu.“ 3) „Sudy stojí podél celé pravé stěny, kromě posledního čtverečku dole.“ 4) „U horní stěny, třetí čtvereček zleva, stojí dřevěný regál s pytli.“
+[DIKTÁT]
+- Sklep je první místnost. Nakresli ho do spodní části papíru: šest čtverečků na šířku a osm na výšku.
+- Schody, kudy jste přišli, jsou v levém dolním rohu.
+- Sudy stojí podél celé pravé stěny, kromě posledního čtverečku dole.
+- U horní stěny, třetí čtvereček zleva, stojí dřevěný regál s pytli.
 
-Co tu je: dva sudy provrtané zespodu, zelí rozkousané. Cestička trusu a škrábanců vede k regálu. Vnímání proti 10: stopy k regálu. Vnímání proti 14: z díry za regálem táhne studený vzduch. Nápovědy: 1) pach je nejsilnější u horní stěny, 2) u regálu se válí omítka a regál stojí nakřivo.
+[PRO PJ] Co tu je, když hráči zkoumají: dva sudy jsou provrtané zespodu, zelí rozkousané. Cestička trusu a škrábanců vede k regálu. Vnímání proti 10: stopy vedou k regálu. Vnímání proti 14: z díry za regálem táhne studený vzduch. Nápovědy: 1) pach je nejsilnější u horní stěny, 2) u regálu se válí omítka a regál stojí nakřivo.
 
-Boj: když někdo hne regálem, vyrazí z díry krysy (počet podle družiny). Rádce vysvětlí iniciativu (3 kostky + Obratnost), útok, zranění a při prvním útoku krysy obranný hod. Krysy bojují do 2 zbývajících životů, pak utečou do díry. Na konci: „Do horní stěny za regál dokresli díru.“
+[PRO PJ] Boj: když někdo hne regálem, vyrazí z díry krysy (počet podle družiny).
+
+[DOSLOVA] (když někdo hne regálem) Vypravěč: Regál zaskřípe a ze tmy za ním se ozve vzteklé pištění. Z díry ve zdi se vyřítí krysa velká jako pes, s holým ocasem a žlutými zuby.
+
+[PRO PJ] Rádce při prvním boji stručně vysvětlí iniciativu (tři kostky, přičteš Obratnost), útok, zranění a při prvním útoku krysy obranný hod. Krysy bojují do 2 zbývajících životů, pak utečou do díry. Po boji:
+
+[DIKTÁT]
+- Do horní stěny za regál dokresli díru, jeden čtvereček.
 
 ## Scéna 3: Stará komora
 
-Mapa (4 × 4): leží nad sklepem, díra za regálem vede do její spodní stěny, druhý čtvereček zleva; haraburdí u levé stěny v horních dvou čtverečcích; okovaná truhla u pravé stěny, třetí čtvereček odshora; uvolněný kámen v pravém horním rohu.
+[PRO PJ] Mapa (4 × 4): leží nad sklepem, díra za regálem vede do její spodní stěny, druhý čtvereček zleva; haraburdí u levé stěny v horních dvou čtverečcích; okovaná truhla u pravé stěny, třetí čtvereček odshora; uvolněný kámen v pravém horním rohu.
 
-Vypravěč: Prolezete dírou do malé zapomenuté místnosti. Musela tu být dávno před hospodou. Vzduch je studený a suchý a všude leží prach.
+[DOSLOVA] Vypravěč: Prolezete dírou do malé zapomenuté místnosti. Musela tu být dávno před hospodou. Vzduch je studený a suchý a všude leží prach.
 
-Rádce diktuje: 1) poloha nad sklepem a rozměr 4 na 4, 2) vstup ve spodní stěně druhým čtverečkem zleva, 3) haraburdí u levé stěny nahoře, 4) truhla u pravé stěny třetí odshora, 5) krysí stopy končí v pravém horním rohu u zdi.
+[DIKTÁT]
+- Komora leží nad sklepem. Nakresli ji čtyři čtverečky na šířku a čtyři na výšku.
+- Díra, kterou jste prolezli, je ve spodní stěně, druhý čtvereček zleva.
+- U levé stěny, v horních dvou čtverečcích, leží hromada haraburdí.
+- U pravé stěny, třetí čtvereček odshora, stojí okovaná truhla.
+- Krysí stopy končí u zdi v pravém horním rohu.
 
-Truhla: nezamčená. Trpasličí účetní tabulky (Historie proti 10, trpaslík automaticky): patřily kupci Hrudomírovi, skladišti je přes sto let, poslední zápis končí slovem „strážce“. Dále pečetní prsten s kladivem a hvězdou.
-Haraburdí: rezavé železné páčidlo – najde se jen při prohledání.
-Pravý horní roh: vydrolená malta, od kamene táhne chlad. S páčidlem jde vypáčit bez hodu. Bez páčidla Atletika proti 15 (neúspěch = 1 zranění, lze znovu).
-Nápovědy jen tyto dvě: 1) krysí stopy končí u zdi v pravém horním rohu, 2) kámen se viklá, ale holýma rukama s ním nepohneš.
+[PRO PJ] Truhla: nezamčená. Uvnitř trpasličí účetní tabulky (Historie proti 10, trpaslík automaticky): patřily kupci Hrudomírovi, skladišti je přes sto let, poslední zápis končí slovem „strážce“. Dále pečetní prsten s kladivem a hvězdou.
+[PRO PJ] Haraburdí: rezavé železné páčidlo – najde se jen při prohledání.
+[PRO PJ] Pravý horní roh: vydrolená malta, od kamene táhne chlad. S páčidlem jde vypáčit bez hodu. Bez páčidla Atletika proti 15 (neúspěch = 1 zranění, lze znovu).
+[PRO PJ] Nápovědy jen tyto dvě: 1) krysí stopy končí u zdi v pravém horním rohu, 2) kámen se viklá, ale holýma rukama s ním nepohneš.
 
 ## Scéna 4: Krypta
 
-Mapa (5 × 5): leží nad komorou, spojuje je krátká chodbička z pravého horního rohu komory; vstup uprostřed spodní stěny; rakev v prostředním sloupci druhý čtvereček odspodu; rakev u levé stěny druhý odshora; rakev u pravé stěny druhý odshora; kamenné dveře uprostřed horní stěny.
+[PRO PJ] Mapa (5 × 5): leží nad komorou, spojuje je krátká chodbička z pravého horního rohu komory; vstup uprostřed spodní stěny; rakev v prostředním sloupci druhý čtvereček odspodu; rakev u levé stěny druhý odshora; rakev u pravé stěny druhý odshora; kamenné dveře uprostřed horní stěny.
 
-Vypravěč: Za kamenem je krátká chodbička a za ní nízká krypta. Je tu ticho jako v hrobě, a hrob to taky je. Na protější stěně slabě modře světélkuje nápis.
+[DOSLOVA] Vypravěč: Za kamenem je krátká chodbička a za ní nízká krypta. Je tu ticho jako v hrobě, a hrob to taky je. Na protější stěně slabě modře světélkuje nápis.
 
-Sarkofágy: víka těžká (Síla proti 12); vhodná chvíle vysvětlit pomoc spolubojovníka = výhoda. Uvnitř kosti a rezavá přilba, nic nebezpečného.
+[DIKTÁT]
+- Z pravého horního rohu komory vede krátká chodbička nahoru do krypty.
+- Krypta má pět čtverečků na šířku a pět na výšku. Vstup je uprostřed spodní stěny.
+- Kamenná rakev stojí v prostředním sloupci, druhý čtvereček odspodu.
+- Druhá rakev je u levé stěny, druhý čtvereček odshora.
+- Třetí rakev je u pravé stěny, druhý čtvereček odshora.
+- Uprostřed horní stěny jsou kamenné dveře s vytesaným obličejem trpaslíka.
 
-Kamenné dveře s vytesaným obličejem trpaslíka: nápis se přizpůsobí tomu, kdo ho čte – použij dospělou hádanku (dětskou jen když je zjevné, že hraje dítě); dveře se otevřou na vyslovenou odpověď.
-- Děti 6–10 let: „Mám krk, ale nemám hlavu. Mám břicho, ale nejím. Co jsem?“ Odpověď: láhev. Nápovědy: 1) Trpaslíci ji mají rádi plnou piva. 2) Dá se z ní pít.
-- Starší a dospělí: „Čím víc z ní bereš, tím je větší. Co jsem?“ Odpověď: díra. Nápovědy: 1) Trpaslík se zamyslí a podívá se na krumpáč. 2) Jednou takovou jste už sami prolezli.
-Úplné zaseknutí: puklinou u země se dá protáhnout (Obratnost proti 12) a dveře otevřít zevnitř.
+[PRO PJ] Rakve: víka těžká (Síla proti 12); vhodná chvíle vysvětlit pomoc spolubojovníka = výhoda. Uvnitř kosti a rezavá přilba, nic nebezpečného.
+[PRO PJ] Kamenné dveře: když někdo přečte svítící nápis, řekni hádanku. Použij dospělou verzi; dětskou jen když je zjevné, že hraje dítě. Dveře se otevřou na vyslovenou odpověď.
+
+[DOSLOVA] (dospělá hádanka) Vypravěč: Nápis říká: Čím víc z ní bereš, tím je větší. Co jsem?
+[PRO PJ] Odpověď: díra. Nápovědy: 1) Vytesaný trpaslík jako by se díval na krumpáč opřený v rohu. 2) Jednou takovou jste už sami prolezli.
+
+[DOSLOVA] (dětská hádanka) Vypravěč: Nápis říká: Mám krk, ale nemám hlavu. Mám břicho, ale nejím. Co jsem?
+[PRO PJ] Odpověď: láhev. Nápovědy: 1) Trpaslíci ji mají rádi plnou piva. 2) Dá se z ní pít.
+
+[PRO PJ] Úplné zaseknutí: puklinou u země se dá protáhnout (Obratnost proti 12) a dveře otevřít zevnitř.
 
 ## Scéna 5: Pokladnice kupce Hrudomíra
 
-Mapa (4 široká × 6 vysoká): leží nad kryptou; vstup levým krajním čtverečkem dolní stěny; kostlivec v horní řadě druhý zleva; truhla v horní řadě třetí zleva; puklina v pravé stěně třetí odshora.
+[PRO PJ] Mapa (4 široká × 6 vysoká): leží nad kryptou; vstup levým krajním čtverečkem dolní stěny; kostlivec v horní řadě druhý zleva; truhla v horní řadě třetí zleva; puklina v pravé stěně třetí odshora.
 
-Vypravěč: Dveře se se skřípěním rozjedou. Za nimi je úzká síň a v jejím konci stojí u okované truhly postava v rezavé kroužkové košili. Pod helmou nejsou oči, jen prázdné jamky. Kostlivec pomalu zvedne meč. Odněkud je slyšet pištění.
+[DOSLOVA] Vypravěč: Dveře se se skřípěním rozjedou. Za nimi je úzká síň a na jejím konci stojí u okované truhly postava v rezavé kroužkové košili. Pod helmou nejsou oči, jen prázdné jamky. Kostlivec pomalu zvedne meč. Odněkud je slyšet pištění.
 
-Rádce diktuje krátce (hrozí boj).
+[PRO PJ] Tady mapu nediktuj, hrozí boj. Nadiktuj ji až po boji nebo když o ni hráči požádají:
 
-Řešení bez boje: když někdo ukáže nebo nasadí pečetní prsten, kostlivec skloní meč a znehybní. Krysy zaútočí tak jako tak. Nenapovídat.
-Boj: kostlivec a krysy podle družiny, krysy vylezou z pukliny ve 2. kole. Kostlivec se nehne od truhly a neútočí na postavy v bezvědomí; družina může ustoupit, odpočinout si a vrátit se. Drtivé zbraně kostlivcům dvojnásob.
-Poklad: 40 zlatých, lektvar léčení (vyléčí 2 kostky), útržek mapy hor s trpasličí runou pro „vchod“ (trpaslík ji pozná). Mezi kostmi kostlivcův krátký meč (k6, bodný, lehký).
-Puklina: úzká chodba asi 10 čtverečků ven ke břehu řeky; lze zavalit kamením.
+[DIKTÁT]
+- Pokladnice leží nad kryptou. Má čtyři čtverečky na šířku a šest na výšku.
+- Vešli jste levým krajním čtverečkem dolní stěny.
+- Kostlivec stál v horní řadě, druhý čtvereček zleva.
+- Truhla je v horní řadě, třetí čtvereček zleva.
+- V pravé stěně, třetí čtvereček odshora, je puklina.
 
-## Nestvůry (SRD 5.1, režim k6, obranné hody)
+[PRO PJ] Řešení bez boje: když někdo ukáže nebo nasadí pečetní prsten, kostlivec skloní meč a znehybní. Krysy zaútočí tak jako tak. Nenapovídat.
+[PRO PJ] Boj: kostlivec a krysy podle družiny, krysy vylezou z pukliny ve 2. kole. Kostlivec se nehne od truhly a neútočí na postavy v bezvědomí; družina může ustoupit, odpočinout si a vrátit se. Drtivé zbraně kostlivcům dvojnásob.
+[PRO PJ] Poklad: 40 zlatých, lektvar léčení (vyléčí 2 kostky), útržek mapy hor s trpasličí runou pro „vchod“ (trpaslík ji pozná). Mezi kostmi kostlivcův krátký meč (zranění jedna kostka, bodný, lehký).
+[PRO PJ] Puklina: úzká chodba asi 10 čtverečků ven ke břehu řeky; lze zavalit kamením.
 
-Obří krysa: Obrana 12 · Životy 7 · Rychlost 6 čtverečků · Kousnutí útočný bonus +4, zranění 4 (pevné) · Smečka: když vedle cíle stojí další krysa, hráč má na obranu nevýhodu · Záchrany: Obratnost +2, ostatní +0 · Vidění ve tmě.
+## Nestvůry (SRD 5.1, jen šestistěnné kostky, obranné hody)
 
-Kostlivec strážce: Obrana 13 · Životy 13 · Rychlost 6 čtverečků · Krátký meč útočný bonus +4, zranění 5 (pevné) · drtivé zbraně dvojnásob · jed nepůsobí · Záchrany: Obratnost +2, ostatní +0 · neútočí na postavy v bezvědomí; poslechne nositele Hrudomírova prstenu.
+[PRO PJ] Obří krysa: Obrana 12 · Životy 7 · Rychlost 6 čtverečků · Kousnutí útočný bonus +4, zranění 4 (pevné) · Smečka: když vedle cíle stojí další krysa, hráč má na obranu nevýhodu · Záchrany: Obratnost +2, ostatní +0 · Vidění ve tmě.
 
-Obranný hod proti útoku +4 – co musí padnout na třech kostkách: Obrana 12 → 14, Obrana 14 → 12, Obrana 17 → 9, Obrana 18 → 8.
+[PRO PJ] Kostlivec strážce: Obrana 13 · Životy 13 · Rychlost 6 čtverečků · Krátký meč útočný bonus +4, zranění 5 (pevné) · drtivé zbraně dvojnásob · jed nepůsobí · Záchrany: Obratnost +2, ostatní +0 · neútočí na postavy v bezvědomí; poslechne nositele Hrudomírova prstenu.
+
+[PRO PJ] Obranný hod proti útoku +4 – co musí padnout na třech kostkách: Obrana 12 → 14, Obrana 14 → 12, Obrana 17 → 9, Obrana 18 → 8.
 
 ## Zakončení
 
-Vypravěč: Matouš už má na stole pečené maso a džbány. Když mu povíte o kryptě a kostlivci, chvíli jen zírá, pak se rozesměje. „Sto let jsem čepoval pivo na hromadě zlata a nevěděl jsem o tom!“ Zaplatí vám a pak se zadívá na útržek mapy. „Tyhle hory znám. Říká se jim Šedé zuby. Odtamtud se nikdo nevrací se suchýma nohama… ani s prázdnýma rukama.“
+[DOSLOVA] Vypravěč: Matouš už má na stole pečené maso a džbány. Když mu povíte o kryptě a kostlivci, chvíli jen zírá, a pak se rozesměje.
 
-Rádce zrekapituluje: odměnu od Matouše a podíl ze 40 zlatých; lektvar, útržek mapy, případně meč a prsten; 300 zkušeností každému = postup na 2. úroveň.
+[DOSLOVA] Matouš: Sto let jsem čepoval pivo na hromadě zlata a nevěděl jsem o tom! Tady máte, co jsem slíbil. A tyhle hory na té vaší mapě znám. Říká se jim Šedé zuby. Odtamtud se nikdo nevrací se suchýma nohama… ani s prázdnýma rukama.
+
+[PRO PJ] Nakonec Rádce nadiktuje k zapsání (formou diktátu, podle toho, co družina skutečně získala): odměnu od Matouše, podíl ze 40 zlatých, lektvar, útržek mapy, případně meč a prsten, a 300 zkušeností každému = postup na 2. úroveň.
 </script>
 <script>
 const SYSTEM_PROMPT = `Jsi Pán jeskyně (PJ) hry „Dobrodružné výpravy za poklady“. Hraje se u skutečného stolu: hráči mají papír, tužku, čtverečkovaný papír na mapu a šestistěnné kostky. Tvůj text se čte nahlas českým syntezátorem řeči a hráči ti odpovídají hlasem; jejich řeč se převádí na text a může obsahovat chyby rozpoznávání – domýšlej rozumně, a když si nejsi jistý, krátce se zeptej.
 
-Vedeš dobrodružství uvedené níže a řídíš se jeho pravidly vedení. Drž se scénáře, nevymýšlej nesouvisející odbočky ani místnosti navíc.
+Vedeš dobrodružství uvedené níže a řídíš se jeho pravidly vedení.
+
+SCÉNÁŘ JE ZÁVAZNÝ (nejdůležitější pravidlo):
+- Řádky označené [DOSLOVA] řekni přesně tak, jak jsou napsané, uvedeným mluvčím. Nic nepřidávej, nevynechávej, nepřevyprávěj a neměň pořadí. Co má říct postava, řekne postava svým řádkem, ne Vypravěč. Každý takový text řekni ve chvíli, kdy na něj ve scéně dojde, a jen jednou (znovu jen na „zopakuj“). Poznámku v závorce před mluvčím (např. „(jen při úspěšném smlouvání)“) nečti, říká ti jen, kdy text použít.
+- Řádky [DIKTÁT] nadiktuj přesně a ve stejném pořadí způsobem popsaným v části DIKTOVÁNÍ.
+- Text [PRO PJ] hráčům nečti. Je to podklad, podle kterého odpovídáš.
+- Vlastními slovy mluv jen tehdy, když hráči řeknou nebo udělají něco, na co scénář doslovný text nemá. I pak se drž faktů ze scénáře a nic si nepřimýšlej: žádné nové postavy, předměty, místnosti, sliby ani odměny. Když scénář odpověď nezná, postava to prostě neví.
+
+HRÁČI ROZHODUJÍ:
+- Nikdy nerozhoduj za postavy hráčů a nepopisuj, co dělají, dokud to sami neřeknou. Nepřesouvej je do další místnosti ani scény, dokud neřeknou, že tam jdou.
+- Když postava něco nabídne nebo se na něco zeptá, domluv a čekej na odpověď hráčů.
+- Hod chtěj jen tehdy, když se hráč sám o něco pokusí a výsledek není jistý. Sám hody nenabízej („nechceš smlouvat?“). Po hráči nikdy nechtěj, aby k hodu něco přičítal; bonus přičteš ty.
 
 TAJEMSTVÍ SCÉNÁŘE: Nikdy hráčům dopředu neprozrazuj, co je čeká – žádné nestvůry, jejich počet, pasti, hádanky, řešení, poklad ani další místnosti. Úpravy obtížnosti (např. méně nestvůr pro malou družinu) dělej potichu a nikdy je nekomentuj. Hráči se vše dozví až ve hře, když na to narazí. Ani úvodní přivítání nesmí nic prozradit.
 
@@ -285,15 +408,21 @@ FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 - Za jméno mluvčího můžeš do závorky napsat krátký pokyn k přednesu, např. „Vypravěč (napjatě, tišeji):“ nebo „Matouš (šeptem):“. Závorka se nečte nahlas, jen řídí hlas. Používej ji, když se nálada mění (boj, tajemno, úleva, vtip), ne u každého řádku.
 - Žádný markdown: žádné hvězdičky, odrážky, nadpisy ani tabulky.
 - Čísla do dvaceti piš slovy ve správném pádě („hoď třemi kostkami“, „potřebuješ aspoň devět“, „zbývají ti čtyři životy“), aby je hlas přečetl přirozeně. Větší čísla piš číslicemi.
-- Kostky říkej slovy („hoď třemi kostkami“, „jednou kostkou a přičti 4“), nikdy nepiš zkratky jako 3k6 nebo k6.
-- Nikdy po hráčích nežádej potvrzení typu „mám“ nebo „hotovo“. Odpověď hráče (jméno, volba, hod) je sama potvrzení, hned na ni navaž dalším krokem. Když hráč něco nestihne zapsat, řekne „stop“ nebo „zopakuj“.
+- Kostky říkej slovy („hoď třemi kostkami“, „jedna kostka plus čtyři“). Nikdy nepiš ani neříkej zkratky jako 3k6, k6 nebo „k šesti“.
+- Mimo diktování po hráčích nežádej potvrzení typu „mám“ nebo „hotovo“. Odpověď hráče (jméno, volba, hod) je sama potvrzení, hned na ni navaž dalším krokem.
 - Mluv přirozeně jako zkušený vypravěč u stolu: obvykle 1–3 krátké věty, víc jen při popisu nového místa. Na konci jasně řekni, co mají hráči udělat nebo na co si hodit, ale nekonči pořád stejnou otázkou.
 - NIKDY NEOPAKUJ, CO HRÁČ PRÁVĚ ŘEKL. Když nahlásí hod („házím, šest“), neříkej „hodil jsi šest“, rovnou řekni, co se stalo. Když řekne, co dělá, nepopisuj to po něm znovu, řekni až následek. Nezačínej potvrzením typu „Dobře“, „Rozumím“, „Takže…“, „Výborně“. Neshrnuj, co už zaznělo. Nepokládej víc otázek najednou.
 - MLUV JAKO ČLOVĚK U STOLU, NE JAKO PŘEDČÍTAČ: krátké věty, jak se říkají nahlas, žádné výčty a souvětí na tři řádky. Klidně hovorově („Jo, to jde.“, „Hm, zkus to.“), ale česky správně. Reaguj na to, co hráč skutečně řekl, ne obecnou frází.
 - NEOPAKUJ SE: popis místa, který už zazněl, znovu neříkej (jen na „zopakuj“). Než odpovíš, podívej se na své poslední odpovědi a nepoužij stejný začátek, stejný konec ani stejnou otázku. Nekonči každou odpověď otázkou typu „Co uděláte?“; často stačí prostě domluvit a hráči se ozvou sami.
 - Když v historii uvidíš „…(hráč mě přerušil)“, hráč ti skočil do řeči jako u stolu. K nedořečenému se nevracej, nezačínej znovu od začátku a neomlouvej se, prostě odpověz na to, co řekl. Když zbylá informace byla důležitá (např. číslo potřebné na hod), řekni ji jednou krátkou větou.
-- Diktování mapy: nadiktuj celou místnost najednou, ale každý bod mapy na SAMOSTATNÝ řádek začínající „Rádce:“ (rozměr, vstup, každý předmět zvlášť, východy). Mezi řádky aplikace sama udělá pauzu na kreslení, takže na „mám“ nečekej. Směry vztahuj k papíru (nahoře, dole, vlevo, vpravo). Když hráč řekne „zopakuj“ nebo „kde je…“, zopakuj jen to, oč žádá.
-- „Zopakuj“ = zopakuj poslední popis nebo mapu. „Stop“ = odpověz jen „Rádce: Čekám.“ „Pokračuj“ = pokračuj, kde jste skončili.
+- „Zopakuj“ = zopakuj poslední popis. „Stop“ = odpověz jen „Rádce: Čekám.“ „Pokračuj“ = pokračuj, kde jste skončili.
+
+DIKTOVÁNÍ (karta postavy, mapa, odměny, cokoli k zapsání nebo zakreslení) probíhá vždycky stejně:
+- Nejdřív jedním řádkem „Rádce:“ řekni, co budeš diktovat (např. „Hraješ za trpaslíka bojovníka Borymira. Nadiktuju ti jeho kartu.“). Při úplně prvním diktování ve hře přidej větu: „Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.“ Později už ji neopakuj.
+- Pak napiš každý údaj na samostatný řádek, který začíná „Diktát:“. Jeden krátký údaj = jeden řádek. Napiš všechny řádky najednou; aplikace sama po každém řádku počká, až hráč řekne „dál“, a umí řádek zopakovat.
+- Za poslední řádek „Diktát:“ už nic dalšího nepiš. Aplikace ti dá vědět, až bude všechno zapsané, a teprve pak pokračuj.
+- Když ti aplikace napíše, že hráč během diktování promluvil, krátce odpověz a zbylé řádky nadiktuj znovu stejným způsobem.
+- Když hraje víc hráčů, diktuj karty postupně: nejdřív celou kartu jednoho, v další odpovědi kartu dalšího.
 
 PRAVIDLA KOSTEK (jen šestistěnné kostky):
 - Zkouška, útok, záchrana: tři kostky + bonus. Výhoda: čtyři kostky, nejnižší se škrtne. Nevýhoda: čtyři kostky, nejvyšší se škrtne. Součet kostek 16 a víc = kritický úspěch (u útoku se zranění hází dvakrát), 5 a méně = automatický neúspěch.
@@ -306,7 +435,7 @@ SEŠIT HRÁČE: každý hráč si vede postavu v sešitě, ale pravdu držíš t
 
 STÁLÝ POSLECH: aplikace poslouchá celý stůl pořád, i když mluvíš ty. Když zpráva hráčů zjevně není určená do hry (bavíte se mimo hru, např. „podej mi pivo“, „kdy je večeře“) nebo je to jen útržek bez smyslu, odpověz přesně „(ticho)“ a nic jiného.
 
-ZAČÁTEK HRY: jednou dvěma větami přivítej hráče a zeptej se, kdo dnes hraje a za jakou postavu. Nabídni čtyři hotové postavy: u každé jen jméno, kdo to je a co umí, bez čísel. Čísla nadiktuj k zapsání až po výběru. Postavy se v úvodu netvoří. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě. Pak hraj.
+ZAČÁTEK HRY: jednou dvěma větami přivítej hráče a zeptej se, kdo dnes hraje. Pak pokračuj scénou 0 přesně podle scénáře. Na věk se neptej. Hádanky dávej v dospělé verzi; dětskou použij, jen když ze hry jasně vyplyne, že hraje dítě. Pak hraj.
 
 DOBRODRUŽSTVÍ:
 `;
@@ -319,6 +448,14 @@ const store = {
 };
 
 let messages = store.get('messages', []);
+// Full record of the game for later review ("Záznam hry" button)
+let gameLog = store.get('gameLog', []);
+function logEv(kind, text) {
+  const d = new Date(), t = [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':');
+  gameLog.push('[' + t + '] ' + kind + ': ' + String(text).replace(/\s+/g, ' ').trim());
+  if (gameLog.length > 4000) gameLog.splice(0, gameLog.length - 4000);
+  store.set('gameLog', gameLog);
+}
 let busy = false, abortCtl = null;
 
 // ---------- UI helpers ----------
@@ -326,6 +463,7 @@ function setStatus(t) { $('status').textContent = t; }
 function addLine(who, text, cls) {
   const d = document.createElement('div');
   d.className = 'line ' + (cls || who);
+  if (cls === 'err') logEv('CHYBA', text);
   const w = document.createElement('span'); w.className = 'who'; w.textContent = who + ':';
   d.appendChild(w); d.appendChild(document.createTextNode(text));
   $('log').appendChild(d);
@@ -603,6 +741,7 @@ function firstSound() {
   const s = x => (Math.max(0, x) / 1000).toFixed(1).replace('.', ',');
   if (tm.test) { $('timing').textContent = 'Hlas začal mluvit za ' + s(tm.audio - tm.end) + ' s'; $('aiInfo').textContent = $('timing').textContent + '.'; return; }
   const stt = (tm.stt || tm.end) - tm.end, llm = (tm.llm || tm.audio) - (tm.stt || tm.end), tts = tm.audio - (tm.llm || tm.audio);
+  logEv('ODEZVA', s(tm.audio - tm.end + (tm.silence || 0)) + ' s (ticho ' + s(tm.silence || 0) + ', rozpoznání ' + s(stt) + ', PJ ' + s(llm) + ', hlas ' + s(tts) + ')');
   $('timing').textContent = 'Odezva ' + s(tm.audio - tm.end + (tm.silence || 0)) + ' s od konce věty  ·  čekání na ticho ' + s(tm.silence || 0) +
     '  ·  rozpoznání ' + s(stt) + '  ·  PJ ' + s(llm) + '  ·  hlas ' + s(tts);
 }
@@ -698,35 +837,74 @@ function playUrl(url, gen) {
     audioEl.play().catch(e => { if (e.name !== 'AbortError') res(); }); // AbortError = paused by barge-in, resumes later
   }).then(() => URL.revokeObjectURL(url));
 }
-function cloudSpeak(role, text, provider, endsLine, mood) {
+function makeItem(role, text, provider, mood) {
   const key = (provider === 'gemini' ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
   const voiceId = provider === 'gemini' ? castFor(role).voice : $(roleSelect(role)).value;
   if (!key || !voiceId) {
     if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', provider === 'gemini' ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
-    return;
+    return null;
   }
   const k = 'chars_' + provider;
   store.set(k, store.get(k, 0) + text.length); showUsage();
-  let item;
   if (provider === 'gemini' && Date.now() < aiBlockedUntil) {
-    if (!$('gKey').value.trim()) return;
+    if (!$('gKey').value.trim()) return null;
     const p = fetchAudio('google', chirpFor(role), text); p.catch(() => {});
-    item = { p, role, text, pauseAfter: 0 };
-  } else if (provider === 'gemini') {
+    logEv('HLAS', 'starší hlas (limit nových hlasů)');
+    return { p, role, text, pauseAfter: 0 };
+  }
+  if (provider === 'gemini') {
     const c = castFor(role);
     const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
-    item = { stream: geminiStream(c.voice, style, text), role, text, pauseAfter: 0 };
-  } else {
-    const p = fetchAudio(provider, voiceId, text);
-    p.catch(() => {}); // reported when played
-    item = { p, role, text, pauseAfter: 0 };
+    return { stream: geminiStream(c.voice, style, text), role, text, pauseAfter: 0 };
   }
+  const p = fetchAudio(provider, voiceId, text);
+  p.catch(() => {}); // reported when played
+  return { p, role, text, pauseAfter: 0 };
+}
+function cloudSpeak(role, text, provider, endsLine, mood) {
+  const item = makeItem(role, text, provider, mood);
+  if (!item) return;
   speakQueueCount++; rememberPJ(text);
-  // pause for drawing after each map line (only if another line follows)
-  if (lastQueued && lastQueued.mapLine && lastQueued.lineEnded) lastQueued.item.pauseAfter = (parseFloat($('mapPause').value) || 0) * 1000;
-  lastQueued = { item, mapLine: isMapLine(role, text) || (lastQueued && lastQueued.mapLine && !lastQueued.lineEnded && role === 'Rádce'), lineEnded: !!endsLine };
   elQueue.push(item);
   if (!elPlaying) playNext(elGen);
+}
+
+// ---------- Dictation: one line, then wait until the player says "dál" ----------
+const DICT_MOOD = 'pomalu a zřetelně, diktuješ k zapsání';
+const DICT_NEXT = ['dal', 'dale', 'dalsi', 'pokracuj', 'pokracujeme', 'mam', 'hotovo', 'zapsano', 'napsano', 'muzes', 'muzeme', 'jedeme', 'ok', 'jo', 'ano'];
+const DICT_REPEAT = ['zopakuj', 'opakuj', 'znovu', 'jeste', 'coze', 'nestihl', 'nerozumel'];
+const DICT_ASK = ['co', 'kolik', 'jak', 'proc', 'kde', 'kdy', 'ktery', 'ktera', 'znamena', 'radce', 'pane', 'pockej', 'stop', 'nechci', 'chci'];
+let dictGate = null, dictSkip = false;
+function dictMode() { return !!dictGate || elQueue.some(i => i.gate); }
+function pushGate(text) {
+  if (engine() === 'mac') return;
+  elQueue.push({ gate: true, text });
+  if (!elPlaying) playNext(elGen);
+}
+function dictRepeat() {
+  const g = dictGate, it = makeItem('Rádce', g.text, engine(), DICT_MOOD);
+  if (!it) return;
+  logEv('DIKTÁT', 'zopakovat: ' + g.text);
+  speakQueueCount++; elQueue.unshift(it, { gate: true, text: g.text }); g.res();
+}
+function dictHeard(raw) {
+  resumePJ();
+  const seg = stripEcho(raw), words = norm(seg);
+  if (!words.length) return;
+  const has = list => words.some(w => list.includes(w));
+  if (words.length <= 4 && has(DICT_REPEAT)) { if (dictGate) dictRepeat(); return; }
+  if (words.length <= 3 && has(DICT_NEXT)) {
+    addLine('Stůl', seg, 'player'); logEv('DIKTÁT', 'dál');
+    tm = { end: performance.now(), silence: 0 };
+    if (dictGate) dictGate.res(); else dictSkip = true;
+    return;
+  }
+  if (!(words.length >= 5 || /\?/.test(raw) || has(DICT_ASK))) { logEv('DIKTÁT', 'ignorováno (mumlání při psaní): ' + seg); return; }
+  const cur = dictGate ? dictGate.text : '', rest = elQueue.filter(i => i.gate).map(i => i.text);
+  interruptPJ();
+  addLine('Stůl', seg, 'player');
+  askClaude('Hráči: ' + seg + '\n(Poznámka aplikace: hráč promluvil během diktování' + (cur ? ' u řádku „' + cur + '“' : '') + '. ' +
+    (rest.length ? 'Ještě zbývá nadiktovat: ' + rest.join(' | ') + ' ' : 'Všechny řádky už zazněly. ') + 'Krátce odpověz a pak pokračuj.)');
 }
 
 async function playNext(gen) {
@@ -734,6 +912,19 @@ async function playNext(gen) {
   if (!elQueue.length) { elPlaying = false; return; }
   elPlaying = true;
   const item = elQueue.shift(); const p = item.p;
+  if (item.gate) {
+    if (dictSkip) dictSkip = false;
+    else {
+      setStatus('Zapiš si to. Až to budeš mít, řekni „dál“.');
+      logEv('DIKTÁT', 'čekám na „dál“ po řádku: ' + item.text);
+      await new Promise(res => { dictGate = { text: item.text, res }; stopCurrent = res; });
+      dictGate = null;
+    }
+    if (gen !== elGen) return;
+    if (!elQueue.length && !busy) { elPlaying = false; askClaude('(Poznámka aplikace: hráči mají všechno zapsáno a řekli „dál“. Pokračuj ve hře.)'); return; }
+    setStatus('Mluví Pán jeskyně…  (Esc = ticho)');
+    return playNext(gen);
+  }
   try {
     if (item.stream) {
       await waitUnheld();
@@ -741,7 +932,7 @@ async function playNext(gen) {
       try { await playPcm(item, gen); }
       catch (e) {
         if (e.status !== 429) throw e;
-        quotaHit();
+        quotaHit(); logEv('HLAS', 'nové hlasy narazily na limit, mluví starší hlas');
         if ($('gKey').value.trim() && gen === elGen) await playUrl(await fetchAudio('google', chirpFor(item.role), item.text), gen);
       }
     } else {
@@ -751,7 +942,6 @@ async function playNext(gen) {
       await playUrl(url, gen);
     }
     if (gen === elGen) spokenText += item.text + ' ';
-    if (item.pauseAfter && gen === elGen) { setStatus('Pauza na kreslení…  (Esc = přeskočit)'); await new Promise(res => { stopCurrent = res; setTimeout(res, item.pauseAfter); }); }
   } catch (e) {
     if (e.name !== 'AbortError' && gen === elGen) addLine('Chyba', String(e.message || e), 'err');
   }
@@ -801,7 +991,7 @@ function shutUp() {
   pjHeld = false; duck(false);
   speechSynthesis.cancel();
   elGen++; elAbort.abort(); elAbort = new AbortController();
-  elQueue = []; elPlaying = false;
+  elQueue = []; elPlaying = false; dictGate = null; dictSkip = false;
   audioEl.pause(); if (stopCurrent) { stopCurrent(); stopCurrent = null; }
   for (const n of pcmNodes) { try { n.onended = null; n.stop(); } catch (e) {} } pcmNodes = [];
   if (outCtx && outCtx.state === 'suspended') outCtx.resume();
@@ -823,6 +1013,7 @@ function idleStatus() {
 
 // ---------- Streaming text -> lines -> speech ----------
 function makeStreamer() {
+  let dictText = '';
   let pending = '', speaker = 'Vypravěč', mood = '', atLineStart = true, lineEl = null, firstChunk = true;
   function emit(chunk, endsLine) {
     let t = chunk;
@@ -834,12 +1025,14 @@ function makeStreamer() {
     atLineStart = endsLine;
     let clean = t.replace(/[*_#`]/g, '');
     if (/^\s*\(?\s*ticho\s*\)?[.!]?\s*$/i.test(clean)) clean = '';
+    const dict = lc(speaker) === 'diktat', who = dict ? 'Rádce' : speaker;
     if (clean.trim()) {
-      if (!lineEl) lineEl = addLine(speaker, clean.trim() + ' ');
+      if (!lineEl) lineEl = addLine(who, clean.trim() + ' ');
       else lineEl.appendChild(document.createTextNode(clean.trim() + ' '));
-      speak(speaker, clean, endsLine, mood);
+      speak(who, clean, endsLine, dict ? DICT_MOOD : mood);
+      if (dict) dictText += clean.trim() + ' ';
     }
-    if (endsLine) { lineEl = null; markLineEnd(); }
+    if (endsLine) { if (dict && dictText.trim()) pushGate(dictText.trim()); dictText = ''; lineEl = null; }
   }
   // First sentence goes out immediately (fast start); the rest of a line is spoken in bigger pieces,
   // so the voice keeps a natural melody instead of restarting at every full stop.
@@ -869,7 +1062,7 @@ function makeStreamer() {
         push(chunk, isNl);
       }
     },
-    end() { if ((sb + pending).trim()) emit(sb + pending, true); sb = ''; pending = ''; flushPause(); }
+    end() { if ((sb + pending).trim()) emit(sb + pending, true); sb = ''; pending = ''; }
   };
 }
 
@@ -887,6 +1080,7 @@ async function askClaudeInner(userText) {
   const lastMsg = messages[messages.length - 1];
   if (lastMsg && lastMsg.role === 'user') lastMsg.content += '\n' + userText; // unanswered turn: merge
   else messages.push({ role: 'user', content: userText });
+  logEv('→ PJ', userText);
   spokenText = '';
   busy = true; setStatus('Pán jeskyně přemýšlí…'); hfEnsure();
   abortCtl = new AbortController();
@@ -895,7 +1089,7 @@ async function askClaudeInner(userText) {
   try {
     // The model must start talking at once: no thinking before the answer (it cost almost 3 seconds per reply)
     const mdl = $('model').value;
-    const body = { model: mdl, max_tokens: 450, stream: true,
+    const body = { model: mdl, max_tokens: 900, stream: true,
       system: [{ type: 'text', text: SYSTEM_PROMPT + adventure, cache_control: { type: 'ephemeral' } }], messages };
     if (!store.get('noThinkParam', false)) body.thinking = { type: mdl.includes('haiku') ? 'disabled' : 'between_tools' };
     const post = () => fetch('https://api.anthropic.com/v1/messages', {
@@ -935,9 +1129,11 @@ async function askClaudeInner(userText) {
     streamer.end();
     messages.push({ role: 'assistant', content: full || '(bez odpovědi)' });
     store.set('messages', messages);
+    logEv('PJ', full || '(bez odpovědi)');
   } catch (e) {
     if (e.name === 'AbortError') {
       if (spokenText.trim()) { messages.push({ role: 'assistant', content: spokenText.trim() + ' …(hráč mě přerušil)' }); store.set('messages', messages); }
+      logEv('PJ (přerušen)', spokenText.trim() || '(nestihl nic říct)');
     } else {
       messages.pop();
       addLine('Chyba', String(e.message || e), 'err');
@@ -1076,6 +1272,7 @@ function hfHandle() {
   hf.silence = setTimeout(() => { const s = segText(); hfReset(); if (s && !pjActive()) hfSend(s); }, 1300);
 }
 function hfEnsure() {
+  if (paused) return;
   if (sttMode() === 'google') { if (gameStarted) startMic(); return; }
   if (!handsFreeOn() || hf.rec || pttDown || listening || !SR) return;
   const r = new SR(); hf.rec = r; hf.results = null; hf.skip = 0; hf.el = null;
@@ -1148,8 +1345,10 @@ async function startMic() {
 }
 
 let meterT = 0;
+let paused = false;
 function onMicFrame(d) {
   if (sttMode() !== 'google') return;
+  if (paused) { if (mic.speaking) { mic.speaking = false; mic.frames = []; mic.spec = null; } $('meterFill').style.width = '0'; return; }
   const f = new Float32Array(d);
   const fm = f.length / mic.ctx.sampleRate * 1000;          // frame length in ms (~64)
   const lv = rms(f);
@@ -1195,7 +1394,7 @@ function onMicFrame(d) {
     const req = googleStt(pcm16b64(mic.frames), mic.ctx.sampleRate); req.catch(() => {});
     mic.spec = { voiced: mic.voicedMs, req };
   }
-  if (mic.barge) {
+  if (mic.barge && !dictMode()) {   // while dictating, muttering must not stop the GM
     if (!mic.held && mic.voicedMs > 120) duck(true);
     if (!mic.held && mic.voicedMs > 550) { mic.held = true; holdPJ(); setStatus('Poslouchám…'); }
   }
@@ -1216,7 +1415,7 @@ function endSeg(pushToTalk) {
   const spec = mic.spec && mic.spec.voiced === voiced ? mic.spec.req : null;
   const waited = mic.belowMs;
   mic.frames = []; mic.barge = false; mic.held = false; mic.spec = null;
-  if (!forced && voiced < 300) { if (barge) resumePJ(); else if (!pjActive()) idleStatus(); return; } // a click or a cough
+  if (!forced && voiced < (dictMode() ? 140 : 300)) { if (barge) resumePJ(); else if (!pjActive()) idleStatus(); return; } // a click or a cough
   tm = { end: performance.now(), silence: forced ? 0 : waited };
   transcribeSeg(frames, barge, ratio, spec);
 }
@@ -1231,6 +1430,9 @@ function transcribeSeg(frames, barge, ratio, spec) {
 function handleHeard(raw, barge, ratio) {
   raw = (raw || '').replace(/\s+/g, ' ').trim();
   if (tm.end && !tm.stt) tm.stt = performance.now();
+  if (raw) logEv('SLYŠENO', raw + (barge ? '  [do řeči PJ]' : ''));
+  if (paused) return;
+  if (dictMode()) return dictHeard(raw);
   // remove the GM's own words if the mic caught them (only matters while/just after it speaks)
   const nearPJ = barge || pjActive() || Date.now() - lastSpeechEnd < 2000;
   const seg = nearPJ ? stripEcho(raw) : raw;
@@ -1258,7 +1460,7 @@ function pcm16b64(frames) {
   return btoa(bin);
 }
 
-const STT_PHRASES = ['Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
+const STT_PHRASES = ['dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
   'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování'];
@@ -1377,7 +1579,8 @@ loadVoices();
 engineChanged();
 renderCast();
 if ($('aiKey').value && !aiVoices.length) loadAiVoices(true);
-$('model').value = store.get('model', 'claude-haiku-5-5');
+if (store.get('ver', 0) < 4) { store.set('ver', 4); store.set('model', 'claude-sonnet-5-5'); store.set('noThinkParam', false); }   // back to the smarter model
+$('model').value = store.get('model', 'claude-sonnet-5-5');
 $('model').onchange = () => store.set('noThinkParam', false);
 $('rate').value = store.get('rate', 1);
 $('mapPause').value = store.get('mapPause', 3);
@@ -1400,6 +1603,25 @@ function saveSettings() {
 }
 $('rate').oninput = () => { $('rateVal').textContent = $('rate').value; };
 $('openSettings').onclick = () => $('settings').classList.add('open');
+$('pauseBtn').onclick = () => {
+  paused = !paused; logEv('PAUZA', paused ? 'zapnuta' : 'vypnuta');
+  $('pauseBtn').textContent = paused ? '▶ Pokračovat' : '⏸ Pauza';
+  $('pauseBtn').style.borderColor = paused ? 'var(--accent)' : ''; $('pauseBtn').style.color = paused ? 'var(--accent)' : '';
+  if (paused) { hfStop(); holdPJ(); setStatus('Pauza. Hra teď neposlouchá ani nemluví.'); }
+  else { resumePJ(); if (dictGate) setStatus('Zapiš si to. Až to budeš mít, řekni „dál“.'); else idleStatus(); }
+};
+$('copyLog').onclick = async () => {
+  const head = ['Záznam hry – Dobrodružné výpravy za poklady, ' + new Date().toLocaleString('cs-CZ'),
+    'Mozek: ' + $('model').value + ' · hlas: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s',
+    'Obsazení: ' + cast.map(c => c.role + ' = ' + c.voice).join(', '), ''];
+  const text = head.concat(gameLog).join('\n');
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove();
+  }
+  setStatus(ok ? 'Záznam hry je zkopírovaný (' + gameLog.length + ' řádků). Vlož ho do chatu.' : 'Záznam se nepodařilo zkopírovat.');
+};
 $('closeSettings').onclick = () => { saveSettings(); $('settings').classList.remove('open'); idleStatus(); };
 $('testVoice').onclick = () => {
   saveSettings(); ensureOutCtx(); shutUp();
@@ -1414,7 +1636,7 @@ function hideStart() { $('startBar').style.display = 'none'; try { if (navigator
 $('newGame').onclick = () => {
   saveSettings();
   if (messages.length && !confirm('Smazat uloženou hru a začít znovu?')) return;
-  messages = []; store.set('messages', messages); $('log').innerHTML = ''; hideStart(); gameStarted = true;
+  messages = []; store.set('messages', messages); gameLog = []; logEv('HRA', 'nová hra'); $('log').innerHTML = ''; hideStart(); gameStarted = true;
   $('settings').classList.remove('open');
   ensureOutCtx(); if (sttMode() === 'google') startMic();
   tm = { end: performance.now(), silence: 0 };
