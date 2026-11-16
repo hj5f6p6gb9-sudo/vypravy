@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. a</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. b</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -778,7 +778,9 @@ function liveOpen(voice, style) {
           c.take(inl.data);
         }
         if (sc.outputTranscription && sc.outputTranscription.text) c.said += sc.outputTranscription.text;
-        if (sc.turnComplete || sc.generationComplete) c.finish();
+        // the sound is complete at generationComplete; the connection is free for the next line only after turnComplete
+        if (sc.generationComplete) c.finish();
+        if (sc.turnComplete) { c.finish(); c.release(); }
       };
       ws.onerror = () => {};
       ws.onclose = ev => {
@@ -820,13 +822,20 @@ function liveStream(voice, style, text, mood) {
   const ses = liveSession(v, style);
   ses.turns++;
   ses.chain = ses.chain.then(() => new Promise(next => {
-    const end = err => { if (st.done) return; if (err) st.err = err; st.done = true; ses.cur = null; clearTimeout(timer); if (st.onData) st.onData(); next(); };
+    let released = false;
+    const release = () => { if (released) return; released = true; if (ses.cur && ses.cur.st === st) ses.cur = null; next(); };
+    const end = err => {
+      if (st.done) return;
+      if (err) st.err = err;
+      st.done = true; clearTimeout(timer); if (st.onData) st.onData();
+      if (err) release(); else setTimeout(release, 4000);   // normally released by turnComplete; this is only a safety net
+    };
     let timer = null, odd = null;
     const watchdog = ms => { clearTimeout(timer); timer = setTimeout(() => { ses.dead = true; try { ses.ws.close(); } catch (e) {} end(new Error('Živé hlasy: hlas neodpověděl včas.')); }, ms); };
     if (signal.aborted) return end(Object.assign(new Error('přerušeno'), { name: 'AbortError' }));
     ses.ready.then(() => {
       if (signal.aborted) return end(Object.assign(new Error('přerušeno'), { name: 'AbortError' }));
-      const c = ses.cur = { st, said: '',
+      const c = ses.cur = { st, said: '', release,
         take(b64) {
           const bin = atob(b64); let bytes = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -838,6 +847,7 @@ function liveStream(voice, style, text, mood) {
           st.chunks.push(f); watchdog(8000); if (st.onData) st.onData();
         },
         finish(err) {
+          if (st.done) return;
           if (!err && !st.chunks.length) err = new Error('Živé hlasy nevrátily žádný zvuk.');
           if (!err && c.said) {   // did the voice read what it was given?
             const want = norm(text), got = norm(c.said), hit = want.filter(w => got.includes(w)).length;
@@ -1784,7 +1794,7 @@ $('pauseBtn').onclick = () => {
 };
 $('copyLog').onclick = async () => {
   const head = ['Záznam hry – Dobrodružné výpravy za poklady, ' + new Date().toLocaleString('cs-CZ'),
-    'Mozek: ' + $('model').value + ' · hlas: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s',
+    'Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s',
     'Obsazení: ' + cast.map(c => c.role + ' = ' + c.voice).join(', '), ''];
   const text = head.concat(gameLog).join('\n');
   let ok = false;
