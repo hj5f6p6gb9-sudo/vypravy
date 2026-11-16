@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. h</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. i</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -91,11 +91,10 @@
     <div class="hint">Klíče se uloží jen v tomto prohlížeči.</div>
     <label>Způsob mluvení</label>
     <select id="engine">
+      <option value="el">ElevenLabs – nejvýraznější hlasy, platí se podle znaků</option>
       <option value="live">Živé hlasy z AI Studia – bez denního limitu (zkouška)</option>
       <option value="gemini">Čtené hlasy z AI Studia – výraznější, ale jen 100 požadavků denně</option>
-      <option value="gcloud">Čtené hlasy přes Google Cloud – bez denního limitu, jen základní hlasy (zkouška)</option>
       <option value="google">Starší: Google Chirp 3 HD</option>
-      <option value="el">Starší: ElevenLabs</option>
       <option value="mac">Starší: hlasy Macu</option>
     </select>
     <div class="hint">Živé hlasy umí jen 30 základních hlasů ze seznamu, vlastní hlasy z AI Studia zatím ne.</div>
@@ -106,6 +105,22 @@
       <option value="rychle a energicky, bez pauz mezi větami">Rychlé</option>
     </select>
     <div class="hint">Diktování k zapsání zůstává vždy pomalé.</div>
+    <div id="elBox">
+      <label>Klíč ElevenLabs</label>
+      <input id="elKey" type="password" autocomplete="off">
+      <div class="hint">Vytvoříš ho na elevenlabs.io v nastavení účtu (API Keys). Uloží se jen v tomto prohlížeči.</div>
+      <label>Model hlasu ElevenLabs</label>
+      <select id="elModel">
+        <option value="eleven_v3">Eleven v3 – nejvýraznější</option>
+        <option value="eleven_multilingual_v2">Multilingual v2 – stabilní, kvalitní</option>
+        <option value="eleven_flash_v2_5">Flash v2.5 – poloviční cena, nejrychlejší</option>
+        <option value="eleven_turbo_v2_5">Turbo v2.5 – poloviční cena</option>
+      </select>
+      <div class="row"><button class="secondary" id="elLoad">Načíst moje hlasy a modely z ElevenLabs</button></div>
+      <div class="hint" id="elInfo">Hlasy si nejdřív přidej na elevenlabs.io do „My Voices“ (ve Voice Library hledej Czech). Pak je tady načti a rozděl rolím v obsazení.</div>
+      <div class="hint" id="elUsage"></div>
+      <div class="row"><button class="secondary" id="elReset">Vynulovat počítadlo znaků</button></div>
+    </div>
 
     <div id="aiBox">
       <details id="creator" open>
@@ -113,9 +128,11 @@
         <div class="hint">Každá role má svůj hlas a pokyn k přednesu. ▶ = poslechnout. &lt;/&gt; = vložit kód z tlačítka „Get code“ v AI Studiu (nebo jen označení hlasu voice_…), hlas a pokyn se z něj vyplní samy. Vlastní hlasy fungují jen u čtených hlasů. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
         <div id="castList"></div>
         <div class="row"><button class="secondary" id="castAdd">+ Přidat postavu</button><button class="secondary" id="castReset">Vrátit výchozí obsazení</button></div>
-        <div class="row"><button class="secondary" id="aiLoad">Načíst moje hlasy z AI Studia</button></div>
-        <div class="hint" id="aiInfo"></div>
-        <div class="hint" id="aiUsage"></div>
+        <div id="aiOnly">
+          <div class="row"><button class="secondary" id="aiLoad">Načíst moje hlasy z AI Studia</button></div>
+          <div class="hint" id="aiInfo"></div>
+          <div class="hint" id="aiUsage"></div>
+        </div>
       </details>
     </div>
 
@@ -150,14 +167,6 @@
         <div class="row"><button class="secondary" id="gLoad">Načíst české hlasy z Googlu</button></div>
         <div class="hint" id="gInfo"></div>
         <div class="hint" id="gUsage"></div>
-      </div>
-      <div id="elBox">
-        <label>ElevenLabs API klíč</label>
-        <input id="elKey" type="password" autocomplete="off">
-        <div class="row"><button class="secondary" id="elLoad">Načíst hlasy z ElevenLabs</button></div>
-        <div class="hint" id="elInfo"></div>
-        <div class="hint" id="elUsage"></div>
-        <div class="row"><button class="secondary" id="elReset">Vynulovat počítadlo</button></div>
       </div>
       <div id="roleBox">
         <label>Hlas Vypravěče</label><select id="voiceNarr"></select>
@@ -542,8 +551,22 @@ async function loadElVoices() {
     const data = await res.json();
     elVoices = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
     store.set('elVoices', elVoices.map(v => ({ voice_id: v.voice_id, name: v.name, labels: v.labels })));
-    populateSelects();
-    $('elInfo').textContent = 'Načteno hlasů: ' + elVoices.length + '. Vyber role a dej Vyzkoušet hlasy.';
+    populateSelects(); renderCast();
+    let models = '';
+    try {   // which voice models this account may use
+      const mr = await fetch('https://api.elevenlabs.io/v1/models', { headers: { 'xi-api-key': key } });
+      if (mr.ok) {
+        const list = (await mr.json()).filter(m => m.can_do_text_to_speech !== false && m.model_id);
+        if (list.length) {
+          const keep = $('elModel').value; $('elModel').innerHTML = '';
+          for (const m of list) { const op = document.createElement('option'); op.value = m.model_id; op.textContent = (m.name || m.model_id) + ' (' + m.model_id + ')'; $('elModel').appendChild(op); }
+          $('elModel').value = list.some(m => m.model_id === keep) ? keep : list[0].model_id;
+          store.set('elModels', list.map(m => ({ model_id: m.model_id, name: m.name }))); store.set('elModel', $('elModel').value);
+          models = ' Modelů: ' + list.length + '.';
+        }
+      }
+    } catch (e) {}
+    $('elInfo').textContent = 'Načteno hlasů: ' + elVoices.length + '.' + models + ' V obsazení níže vyber hlas pro každou roli a tlačítkem ▶ si ho poslechni.';
   } catch (e) { $('elInfo').textContent = 'Chyba: ' + e.message; }
 }
 
@@ -612,6 +635,11 @@ function parseStudioCode(txt) {
   const v = idm ? [0, idm[1]] : short ? [0, short] : v0;
   return { voice: v ? v[1].trim() : '', styles };
 }
+function elVoiceFor(c) {   // the ElevenLabs voice of a role; until one is chosen, roles get different voices in order
+  if (c.elVoice && elVoices.some(v => v.voice_id === c.elVoice)) return c.elVoice;
+  if (!elVoices.length) return '';
+  return elVoices[Math.max(0, cast.indexOf(c)) % elVoices.length].voice_id;
+}
 function renderCast() {
   const box = $('castList'); box.innerHTML = '';
   cast.forEach((c, i) => {
@@ -621,6 +649,13 @@ function renderCast() {
     if (CAST_FIXED.includes(c.role)) name.readOnly = true;
     name.onchange = () => { c.role = name.value.trim() || c.role; saveCast(); };
     const sel = document.createElement('select');
+    const el = engine() === 'el';
+    if (el) {   // ElevenLabs: each role keeps its own ElevenLabs voice next to the Google one
+      if (!elVoices.length) { const op = document.createElement('option'); op.value = ''; op.textContent = '(nejdřív vlož klíč a načti hlasy z ElevenLabs)'; sel.appendChild(op); }
+      for (const v of elVoices) { const op = document.createElement('option'); op.value = v.voice_id;
+        op.textContent = v.name + (v.labels && (v.labels.language || v.labels.accent) ? ' – ' + (v.labels.language || v.labels.accent) : ''); sel.appendChild(op); }
+      sel.value = elVoiceFor(c); sel.onchange = () => { c.elVoice = sel.value; saveCast(); };
+    } else {
     const cur = aiVoiceId(c.voice);
     let grp = null;
     for (const o of aiVoiceOptions(cur)) {
@@ -628,6 +663,7 @@ function renderCast() {
       const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; grp.appendChild(op);
     }
     sel.value = cur; sel.onchange = () => { c.voice = sel.value; saveCast(); };
+    }
     const play = document.createElement('button'); play.textContent = '▶'; play.title = 'Poslechnout';
     play.onclick = () => { saveSettings(); ensureOutCtx(); shutUp(); tm = { end: performance.now(), silence: 0, test: true };
       speak(c.role, CAST_SAMPLE[c.role] || 'Vy vypadáte jako lidi, co se nebojí tmy. Nechcete si vydělat?', true); };
@@ -649,6 +685,7 @@ function renderCast() {
       const n2 = $('castList').children[i].querySelector('.note');
       if (n2) n2.textContent = 'Vyplněno z kódu' + (r.voice ? ': hlas ' + r.voice : '') + (r.styles.length > 1 ? '. V kódu bylo ' + r.styles.length + ' pokynů, použil jsem první.' : '.');
     };
+    if (el) { row.appendChild(top); box.appendChild(row); return; }   // ElevenLabs voices take no written delivery instruction
     top.insertBefore(codeBtn, play.nextSibling);
     row.appendChild(top); row.appendChild(st); row.appendChild(code); row.appendChild(note); box.appendChild(row);
   });
@@ -777,7 +814,8 @@ function geminiStream(voice, style, text) {
 }
 // ---------- Live voices (Gemini Live API): no daily request limit ----------
 // One open connection per voice. A line is sent as text and the voice reads it; sound comes back in small pieces.
-const isAi = p => p === 'gemini' || p === 'live' || p === 'gcloud';
+const isAi = p => p === 'gemini' || p === 'live';
+const usesCast = p => isAi(p) || p === 'el';
 // what the voice is told about delivery for one line: the chosen tempo (not while dictating) and the mood from the GM
 function delivery(mood) { return [mood === DICT_MOOD ? '' : $('tempo').value, mood || ''].filter(Boolean).join('; '); }
 const LIVE_MODEL = 'gemini-3.8-live';
@@ -977,32 +1015,53 @@ let elQueue = [], elPlaying = false, elAbort = new AbortController(), elGen = 0,
 const audioEl = new Audio();
 function showUsage() {
   const e = store.get('chars_el', 0), g = store.get('chars_google', 0);
-  $('elUsage').textContent = 'Spotřebováno ElevenLabs znaků: ' + e + ' ≈ ' + Math.round(e * 0.5) + ' kreditů';
+  $('elUsage').textContent = 'Přečteno přes ElevenLabs: ' + e + ' znaků (od posledního vynulování)';
   $('gUsage').textContent = 'Spotřebováno Google znaků: ' + g + ' (zdarma je 1 000 000 měsíčně)';
   $('aiUsage').textContent = 'Přečteno novými hlasy: ' + store.get('chars_gemini', 0) + ' znaků';
 }
 
-// Read voices through Google Cloud (older Gemini voice models; per-minute limits, no daily cap)
-const GCLOUD_MODELS = ['gemini-2.5-flash-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-lite-preview-tts'];
-let gcloudModel = 0;
-async function fetchCloudGemini(voice, style, text) {
-  const key = $('gKey').value.trim();
-  let last = null;
-  for (let i = gcloudModel; i < GCLOUD_MODELS.length; i++) {
-    const r = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(key), {
-      method: 'POST', signal: elAbort.signal, headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ input: style ? { text, prompt: style } : { text }, voice: { languageCode: 'cs-CZ', name: voice, modelName: GCLOUD_MODELS[i] }, audioConfig: { audioEncoding: 'MP3' } }) });
-    if (r.ok) {
-      gcloudModel = i;
-      const data = await r.json(), bin = atob(data.audioContent), bytes = new Uint8Array(bin.length);
-      for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-      return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-    }
-    last = Object.assign(new Error('Google Cloud ' + r.status + ' (' + GCLOUD_MODELS[i] + '): ' + (await r.text()).slice(0, 300)), { status: r.status });
-    logEv('HLAS', last.message);
-    if (r.status === 401 || r.status === 403 || r.status === 429) break;   // the key is not let in, or a limit: another model will not help
+function elBody(text, mood, plain) {
+  const model = $('elModel').value, body = { text, model_id: model };
+  if (/flash_v2_5|turbo_v2_5/.test(model)) body.language_code = 'cs';   // only these models accept a forced language
+  if (!plain) {
+    const t = $('tempo').value, speed = mood === DICT_MOOD ? 0.9 : /rychle/.test(t) ? 1.2 : t ? 1.1 : 1;
+    body.voice_settings = { stability: 0.5, similarity_boost: 0.8, speed };
   }
-  throw last;
+  return body;
+}
+let elPlain = false, elNoStream = false;
+// Sound from ElevenLabs as it is generated (raw 24 kHz sound), so the voice starts within a fraction of a second
+function elStream(voiceId, text, mood) {
+  const st = { chunks: [], done: false, err: null, rate: 24000, onData: null };
+  const key = $('elKey').value.trim(), signal = elAbort.signal;
+  const call = plain => fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(voiceId) + '/stream?output_format=pcm_24000', {
+    method: 'POST', signal, headers: { 'xi-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(elBody(text, mood, plain)) });
+  (async () => {
+    let res = await call(elPlain);
+    if (!res.ok && (res.status === 400 || res.status === 422) && !elPlain) {   // this model does not take the voice settings
+      const res2 = await call(true);
+      if (res2.ok) { elPlain = true; res = res2; }
+    }
+    if (!res.ok) throw Object.assign(new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 300)), { status: res.status });
+    const reader = res.body.getReader();
+    let odd = null, hold = [], held = 0;
+    const flush = () => { if (!held) return; const f = new Float32Array(held); let o = 0; for (const h of hold) { f.set(h, o); o += h.length; } hold = []; held = 0; st.chunks.push(f); if (st.onData) st.onData(); };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      let bytes = value;
+      if (odd !== null) { const j = new Uint8Array(bytes.length + 1); j[0] = odd; j.set(bytes, 1); bytes = j; odd = null; }
+      if (bytes.length % 2) { odd = bytes[bytes.length - 1]; bytes = bytes.subarray(0, bytes.length - 1); }
+      const n = bytes.length >> 1; if (!n) continue;
+      const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), f = new Float32Array(n);
+      for (let i = 0; i < n; i++) f[i] = dv.getInt16(i * 2, true) / 32768;
+      hold.push(f); held += n;
+      if (held >= 4800) flush();   // pieces of at least a fifth of a second
+    }
+    flush();
+    if (!st.chunks.length) throw new Error('ElevenLabs nevrátil žádný zvuk.');
+  })().catch(e => { st.err = e; }).finally(() => { st.done = true; if (st.onData) st.onData(); });
+  return st;
 }
 function fetchAudio(provider, voiceId, text) {
   if (provider === 'google') {
@@ -1022,8 +1081,7 @@ function fetchAudio(provider, voiceId, text) {
   return fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(voiceId) + '?output_format=mp3_44100_64', {
     method: 'POST', signal: elAbort.signal,
     headers: { 'xi-api-key': key, 'content-type': 'application/json', 'accept': 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: 'eleven_flash_v2_5', language_code: 'cs',
-      voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } })
+    body: JSON.stringify(elBody(text, '', elPlain))
   }).then(async r => {
     if (!r.ok) throw new Error('ElevenLabs ' + r.status + ': ' + (await r.text()).slice(0, 250));
     return URL.createObjectURL(await r.blob());
@@ -1055,8 +1113,8 @@ function playUrl(url, gen) {
   }).then(() => URL.revokeObjectURL(url));
 }
 function makeItem(role, text, provider, mood) {
-  const key = (provider === 'gcloud' ? $('gKey') : isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
-  const voiceId = isAi(provider) ? castFor(role).voice : $(roleSelect(role)).value;
+  const key = (isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
+  const voiceId = isAi(provider) ? castFor(role).voice : provider === 'el' ? elVoiceFor(castFor(role)) : $(roleSelect(role)).value;
   if (!key || !voiceId) {
     if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', isAi(provider) ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
     return null;
@@ -1075,10 +1133,9 @@ function startItem(item) {
     if (!$('gKey').value.trim()) { item.p = Promise.reject(Object.assign(new Error('limit'), { name: 'AbortError' })); item.p.catch(() => {}); return; }
     item.p = fetchAudio('google', chirpFor(role), text); item.p.catch(() => {});
     logEv('HLAS', 'starší hlas (limit nových hlasů)');
-  } else if (provider === 'gcloud') {
-    const c = castFor(role);
-    const style = [c.style, delivery(mood) ? 'Právě teď: ' + delivery(mood) + '.' : ''].filter(Boolean).join(' ');
-    item.p = fetchCloudGemini(liveVoice(c.voice), style, text); item.p.catch(() => {});
+  } else if (provider === 'el' && !elNoStream) {
+    item.el = true;
+    item.stream = elStream(voiceId, text, mood);
   } else if (provider === 'live' && Date.now() >= liveDownUntil) {
     const c = castFor(role);
     item.live = true;
@@ -1169,13 +1226,21 @@ async function playNext(gen) {
       if (gen !== elGen) return;
       try {
         try { await playPcm(item, gen); }
-        catch (e) {   // live voices failed: say the line with the read voices instead, and stay there for a minute
-          if (!item.live || e.name === 'AbortError' || gen !== elGen) throw e;
-          if (Date.now() >= liveDownUntil) addLine('Chyba', String(e.message || e) + ' Minutu budou mluvit čtené hlasy.', 'err');
-          liveDownUntil = Date.now() + 60000; item.live = false;
-          const c = castFor(item.role);
-          item.stream = geminiStream(c.voice, [c.style, item.mood ? 'Právě teď: ' + item.mood + '.' : ''].filter(Boolean).join(' '), item.text);
-          await playPcm(item, gen);
+        catch (e) {
+          if (item.el && e.name !== 'AbortError' && gen === elGen && e.status !== 401 && e.status !== 402 && e.status !== 429) {
+            // streamed sound is not available on this account or model: fetch the whole line as one file instead
+            logEv('HLAS', 'ElevenLabs bez průběžného zvuku: ' + String(e.message || e).slice(0, 200));
+            elNoStream = true; item.el = false;
+            await playUrl(await fetchAudio('el', item.voiceId, item.text), gen);
+          } else {
+            // live voices failed: say the line with the read voices instead, and stay there for a minute
+            if (!item.live || e.name === 'AbortError' || gen !== elGen) throw e;
+            if (Date.now() >= liveDownUntil) addLine('Chyba', String(e.message || e) + ' Minutu budou mluvit čtené hlasy.', 'err');
+            liveDownUntil = Date.now() + 60000; item.live = false;
+            const c = castFor(item.role);
+            item.stream = geminiStream(c.voice, [c.style, item.mood ? 'Právě teď: ' + item.mood + '.' : ''].filter(Boolean).join(' '), item.text);
+            await playPcm(item, gen);
+          }
         }
       }
       catch (e) {
@@ -1289,7 +1354,7 @@ function makeStreamer() {
     if (isNl) { emit(sb + chunk, true); sb = ''; spokeAny = true; return; }
     if (!spokeAny) { emit(chunk, false); spokeAny = true; return; }
     sb += chunk;
-    if (sb.length > (isAi(engine()) ? 600 : 170)) { emit(sb, false); sb = ''; }   // new voices: fewer, longer requests
+    if (sb.length > (usesCast(engine()) ? 600 : 170)) { emit(sb, false); sb = ''; }   // new voices: fewer, longer requests
   }
   return {
     feed(text) {
@@ -1793,7 +1858,7 @@ function sendTyped() {
 
 // ---------- Settings ----------
 $('apiKey').value = store.get('apiKey', '');
-if (store.get('ver2', 0) < 2) { store.set('ver2', 2); store.set('engine', 'gemini'); }   // back to the read voices to try the designed ones
+if (store.get('ver2', 0) < 3) { store.set('ver2', 3); store.set('engine', 'el'); }   // back to the read voices to try the designed ones
 $('engine').value = store.get('engine', 'live');
 $('aiKey').value = store.get('aiKey', '');
 $('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
@@ -1808,7 +1873,8 @@ $('elKey').value = store.get('elKey', '');
 $('gKey').value = store.get('gKey', '');
 gVoices = store.get('gVoices', []);
 elVoices = store.get('elVoices', []);
-function engineChanged() { $('aiBox').style.display = isAi(engine()) ? 'block' : 'none'; $('roleBox').style.display = isAi(engine()) ? 'none' : 'block';
+function engineChanged() { $('aiBox').style.display = usesCast(engine()) ? 'block' : 'none'; $('roleBox').style.display = usesCast(engine()) ? 'none' : 'block';
+  $('aiOnly').style.display = isAi(engine()) ? 'block' : 'none'; if (typeof renderCast === 'function') renderCast();
   $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = engine() === 'google' ? 'block' : 'none'; populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
@@ -1824,6 +1890,9 @@ function saveSettingsVoicesOnly() { /* remember voices of the engine we are leav
   store.set('engine', engine());
 }
 $('elLoad').onclick = () => { store.set('elKey', $('elKey').value.trim()); loadElVoices(); };
+(() => { const ms = store.get('elModels', []); if (ms.length) { $('elModel').innerHTML = ''; for (const m of ms) { const op = document.createElement('option'); op.value = m.model_id; op.textContent = (m.name || m.model_id) + ' (' + m.model_id + ')'; $('elModel').appendChild(op); } }
+  $('elModel').value = store.get('elModel', 'eleven_v3'); if (!$('elModel').value) $('elModel').selectedIndex = 0; })();
+$('elModel').onchange = () => { store.set('elModel', $('elModel').value); elPlain = false; elNoStream = false; };
 $('elReset').onclick = () => { store.set('chars_el', 0); showUsage(); };
 $('gLoad').onclick = () => { store.set('gKey', $('gKey').value.trim()); loadGVoices(); };
 loadVoices();
@@ -1865,7 +1934,7 @@ $('pauseBtn').onclick = () => {
 $('copyLog').onclick = async () => {
   const head = ['Záznam hry – Dobrodružné výpravy za poklady, ' + new Date().toLocaleString('cs-CZ'),
     'Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s',
-    'Obsazení: ' + cast.map(c => c.role + ' = ' + c.voice).join(', '), ''];
+    'Obsazení: ' + cast.map(c => c.role + ' = ' + (engine() === 'el' ? (elVoices.find(v => v.voice_id === elVoiceFor(c)) || {}).name || '?' : c.voice)).join(', ') + (engine() === 'el' ? ' · model ElevenLabs: ' + $('elModel').value : ''), ''];
   const text = head.concat(gameLog).join('\n');
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
