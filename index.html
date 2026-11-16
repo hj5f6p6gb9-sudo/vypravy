@@ -783,7 +783,7 @@ async function vFetch(path, opts) {
 function voiceIdOf(v) { const m = /voice(?:key)?_[A-Za-z0-9_-]+/.exec(JSON.stringify(v.id || v.name || v)); return m ? m[0] : ''; }
 async function vLoadVoices(quiet) {
   // Google's Agent Platform voice list does not answer a web page, so ask through the AI Studio door: same project, same voices
-  if ($('aiKey').value.trim() || !$('vKey').value.trim()) {
+  {
     if (!$('aiKey').value.trim()) $('aiKey').value = $('vKey').value.trim();
     await loadAiVoices(quiet);
     $('vInfo').textContent = $('aiInfo').textContent;
