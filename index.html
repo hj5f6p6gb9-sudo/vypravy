@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. m</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. n</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -782,7 +782,13 @@ async function vFetch(path, opts) {
 }
 function voiceIdOf(v) { const m = /voice(?:key)?_[A-Za-z0-9_-]+/.exec(JSON.stringify(v.id || v.name || v)); return m ? m[0] : ''; }
 async function vLoadVoices(quiet) {
-  if (!$('vKey').value.trim()) { $('vInfo').textContent = 'Nejdřív vlož klíč Agent Platform.'; return; }
+  // Google's Agent Platform voice list does not answer a web page, so ask through the AI Studio door: same project, same voices
+  if ($('aiKey').value.trim() || !$('vKey').value.trim()) {
+    if (!$('aiKey').value.trim()) $('aiKey').value = $('vKey').value.trim();
+    await loadAiVoices(quiet);
+    $('vInfo').textContent = $('aiInfo').textContent;
+    return;
+  }
   if (!quiet) $('vInfo').textContent = 'Načítám hlasy…';
   try {
     let all = [], token = '';
@@ -801,16 +807,23 @@ async function vLoadVoices(quiet) {
 async function vDesignVoice(c, note) {
   const desc = (c.style || '').trim();
   if (desc.length < 15) { note.textContent = 'Nejdřív napiš do pokynu popis hlasu (kdo to je, věk, barva hlasu, jak mluví).'; return; }
-  if (!$('vKey').value.trim()) { note.textContent = 'Nejdřív vlož klíč Agent Platform.'; return; }
+  const sKey = $('aiKey').value.trim() || $('vKey').value.trim();
+  if (!sKey) { note.textContent = 'Nejdřív vlož klíč.'; return; }
   note.textContent = 'Vytvářím hlas podle popisu, trvá to asi 20 vteřin…';
   const name = c.role + ' ' + new Date().toLocaleDateString('cs-CZ');
   const bodies = [
     { voice: { type: 'VOICE_TYPE_PROMPTED', displayName: name, prompted: { input: desc } }, store: true },
     { voice: { type: 'prompted', prompted: { input: desc } }, store: true }];
   let d = null, err = null;
-  for (const b of bodies) {
-    try { d = await vFetch('voices', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); break; }
-    catch (e) { err = e; if (!/ 400/.test(e.message)) break; }
+  for (const b of [{ voice: { type: 'prompted', displayName: name, prompted: { input: desc } }, store: true }].concat(bodies)) {
+    try {   // through AI Studio (answers a web page); the voice lands in the same project the game plays from
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/voices', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': sKey }, body: JSON.stringify(b) });
+      const txt = await res.text();
+      if (res.ok) { d = JSON.parse(txt); break; }
+      err = new Error('Google ' + res.status + ': ' + txt.slice(0, 250));
+      if (res.status !== 400) break;
+    } catch (e) { err = e; break; }
   }
   if (!d) { note.textContent = 'Hlas se nepodařilo vytvořit: ' + (err ? err.message : ''); logEv('HLAS', 'návrh hlasu selhal: ' + (err ? err.message : '')); return; }
   const v = d.voice || d.response || d, id = voiceIdOf(v);
