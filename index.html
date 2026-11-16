@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. l</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. m</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -863,7 +863,7 @@ function geminiStream(voice, style, text) {
       }
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
-        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst moje hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
+        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. ' + (viaV ? 'Tenhle hlas v projektu Vypravy není. V Nastavení u role napiš do pokynu popis hlasu a klikni na ✦, vytvoří se znovu.' : 'V Nastavení klikni na „Načíst moje hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.'), 'err'); }
         aiBadVoices[(viaV ? 'v:' : '') + model + '|' + v] = true;
         v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
       }
