@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. k</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. l</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -109,7 +109,9 @@
     <div id="vBox">
       <label>Klíč Agent Platform (express mode, začíná AQ. nebo AIza…)</label>
       <input id="vKey" type="password" autocomplete="off">
-      <div class="hint">Vytvoříš ho v Google Cloud Console v části Agent Platform / Vertex AI Studio (API keys). Uloží se jen v tomto prohlížeči. Hlasy a pokyny se berou z obsazení níže.</div>
+      <div class="hint">Uloží se jen v tomto prohlížeči. Hlasy a pokyny se berou z obsazení níže.</div>
+      <div class="row"><button class="secondary" id="vLoad">Načíst moje hlasy z Agent Platform</button></div>
+      <div class="hint" id="vInfo">Vlastní hlasy tady fungují jen ty, které patří k projektu Vypravy. Nový hlas vytvoříš přímo tady: u role napiš do pokynu popis hlasu a klikni na ✦.</div>
     </div>
     <div id="elBox">
       <label>Klíč ElevenLabs</label>
@@ -707,6 +709,11 @@ function renderCast() {
     };
     if (el) { row.appendChild(top); box.appendChild(row); return; }   // ElevenLabs voices take no written delivery instruction
     top.insertBefore(codeBtn, play.nextSibling);
+    if (engine() === 'vertex') {   // design a new voice in the Agent Platform project from the description in the instruction box
+      const dz = document.createElement('button'); dz.textContent = '✦'; dz.title = 'Vytvořit nový hlas podle pokynu (Agent Platform)';
+      dz.onclick = () => { c.style = st.value.trim(); saveCast(); vDesignVoice(c, note); };
+      top.insertBefore(dz, codeBtn);
+    }
     row.appendChild(top); row.appendChild(st); row.appendChild(code); row.appendChild(note); box.appendChild(row);
   });
 }
@@ -757,6 +764,67 @@ async function loadAiVoices(quiet) {
 let aiFmtBy = store.get('aiFmtBy', {}), aiVoiceWarned = false, aiModelBlocked = {}, aiLastModel = '';
 const aiBadVoices = {};
 let vProject = store.get('vProject', ''), vPermWarned = false;
+// Voices kept in the Agent Platform project (the same place the game plays them from)
+async function vFetch(path, opts) {
+  const key = encodeURIComponent($('vKey').value.trim());
+  const urls = (vProject ? ['https://aiplatform.googleapis.com/v1beta1/projects/' + vProject + '/locations/global/' + path] : [])
+    .concat(['https://aiplatform.googleapis.com/v1beta1/' + path]);
+  let last = null;
+  for (const u of urls) {
+    const res = await fetch(u + (u.includes('?') ? '&' : '?') + 'key=' + key, opts);
+    const txt = await res.text();
+    if (res.ok) { try { return JSON.parse(txt); } catch (e) { return {}; } }
+    const m = /projects\/(\d+)\/locations/.exec(txt);
+    if (m && !vProject) { vProject = m[1]; store.set('vProject', vProject); return vFetch(path, opts); }
+    last = new Error('Agent Platform ' + res.status + ': ' + txt.slice(0, 250));
+  }
+  throw last;
+}
+function voiceIdOf(v) { const m = /voice(?:key)?_[A-Za-z0-9_-]+/.exec(JSON.stringify(v.id || v.name || v)); return m ? m[0] : ''; }
+async function vLoadVoices(quiet) {
+  if (!$('vKey').value.trim()) { $('vInfo').textContent = 'Nejdřív vlož klíč Agent Platform.'; return; }
+  if (!quiet) $('vInfo').textContent = 'Načítám hlasy…';
+  try {
+    let all = [], token = '';
+    for (let i = 0; i < 5; i++) {
+      const d = await vFetch('voices?pageSize=200' + (token ? '&pageToken=' + encodeURIComponent(token) : ''));
+      all = all.concat(d.voices || []); token = d.nextPageToken || d.next_page_token || ''; if (!token) break;
+    }
+    const mine = all.map(v => ({ id: voiceIdOf(v), label: v.displayName || v.display_name || (v.prompted && v.prompted.input || '').slice(0, 40) || voiceIdOf(v), mine: true, vertex: true }))
+      .filter(v => v.id);
+    aiVoices = aiVoices.filter(v => !v.vertex && !mine.some(m => m.id === v.id)).concat(mine);
+    store.set('aiVoices', aiVoices); renderCast();
+    $('vInfo').textContent = mine.length ? 'Tvoje hlasy v projektu (' + mine.length + '): ' + mine.map(v => v.label).join(', ') + '. Ve výběru jsou nahoře.'
+      : 'V projektu zatím žádný vlastní hlas není. U role napiš do pokynu popis hlasu a klikni na ✦.';
+  } catch (e) { $('vInfo').textContent = 'Hlasy se nepodařilo načíst: ' + e.message; }
+}
+async function vDesignVoice(c, note) {
+  const desc = (c.style || '').trim();
+  if (desc.length < 15) { note.textContent = 'Nejdřív napiš do pokynu popis hlasu (kdo to je, věk, barva hlasu, jak mluví).'; return; }
+  if (!$('vKey').value.trim()) { note.textContent = 'Nejdřív vlož klíč Agent Platform.'; return; }
+  note.textContent = 'Vytvářím hlas podle popisu, trvá to asi 20 vteřin…';
+  const name = c.role + ' ' + new Date().toLocaleDateString('cs-CZ');
+  const bodies = [
+    { voice: { type: 'VOICE_TYPE_PROMPTED', displayName: name, prompted: { input: desc } }, store: true },
+    { voice: { type: 'prompted', prompted: { input: desc } }, store: true }];
+  let d = null, err = null;
+  for (const b of bodies) {
+    try { d = await vFetch('voices', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); break; }
+    catch (e) { err = e; if (!/ 400/.test(e.message)) break; }
+  }
+  if (!d) { note.textContent = 'Hlas se nepodařilo vytvořit: ' + (err ? err.message : ''); logEv('HLAS', 'návrh hlasu selhal: ' + (err ? err.message : '')); return; }
+  const v = d.voice || d.response || d, id = voiceIdOf(v);
+  if (!id) { note.textContent = 'Google hlas vytvořil, ale nevrátil jeho označení. Dej „Načíst moje hlasy z Agent Platform“.'; return; }
+  c.voice = id; saveCast();
+  aiVoices = aiVoices.filter(x => x.id !== id).concat([{ id, label: name, mine: true, vertex: true }]); store.set('aiVoices', aiVoices);
+  logEv('HLAS', 'vytvořen hlas ' + id + ' pro roli ' + c.role);
+  renderCast();
+  const sa = v.sampleAudio || v.sample_audio, data = sa && (sa.data || sa.audioData || (typeof sa === 'string' ? sa : ''));
+  if (data) {
+    try { const bin = atob(data), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      shutUp(); audioEl.src = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })); audioEl.play().catch(() => {}); } catch (e) {}
+  }
+}
 const AI_MODELS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
 function aiBody(fmt, voice, style, text) {
   if (fmt === 0) return { contents: [{ role: 'user', parts: [style ? { text, speech_metadata: { style } } : { text }] }],
@@ -1930,6 +1998,7 @@ $('elLoad').onclick = () => { store.set('elKey', $('elKey').value.trim()); loadE
 (() => { const ms = store.get('elModels', []); if (ms.length) { $('elModel').innerHTML = ''; for (const m of ms) { const op = document.createElement('option'); op.value = m.model_id; op.textContent = (m.name || m.model_id) + ' (' + m.model_id + ')'; $('elModel').appendChild(op); } }
   $('elModel').value = store.get('elModel', 'eleven_v3'); if (!$('elModel').value) $('elModel').selectedIndex = 0; })();
 $('vKey').value = store.get('vKey', ''); $('vKey').onchange = () => store.set('vKey', $('vKey').value.trim());
+$('vLoad').onclick = () => { store.set('vKey', $('vKey').value.trim()); vLoadVoices(false); };
 $('elModel').onchange = () => { store.set('elModel', $('elModel').value); elPlain = false; elNoStream = false; };
 $('elReset').onclick = () => { store.set('chars_el', 0); showUsage(); };
 $('gLoad').onclick = () => { store.set('gKey', $('gKey').value.trim()); loadGVoices(); };
