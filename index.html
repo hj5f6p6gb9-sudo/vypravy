@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. d</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. e</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -109,7 +109,7 @@
     <div id="aiBox">
       <details id="creator" open>
         <summary>Obsazení hlasů (pro tvůrce výpravy)</summary>
-        <div class="hint">Každá role má svůj hlas a pokyn k přednesu. ▶ = poslechnout. &lt;/&gt; = vložit kód z tlačítka „Get code“ v AI Studiu, hlas a pokyn se z něj vyplní samy. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
+        <div class="hint">Každá role má svůj hlas a pokyn k přednesu. ▶ = poslechnout. &lt;/&gt; = vložit kód z tlačítka „Get code“ v AI Studiu (nebo jen označení hlasu voice_…), hlas a pokyn se z něj vyplní samy. Vlastní hlasy fungují jen u čtených hlasů. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
         <div id="castList"></div>
         <div class="row"><button class="secondary" id="castAdd">+ Přidat postavu</button><button class="secondary" id="castReset">Vrátit výchozí obsazení</button></div>
         <div class="row"><button class="secondary" id="aiLoad">Načíst všechny hlasy z AI Studia</button></div>
@@ -594,7 +594,9 @@ function aiVoiceId(v) {   // a name picked in the cast -> the id the API wants
   return hit ? hit.id : v;
 }
 function aiVoiceOptions(current) {
-  const opts = AI_VOICES.map(([n, d, g]) => ({ id: n, label: n + ' – ' + d + ' (' + (g === 'm' ? 'muž' : 'žena') + ')' }));
+  // your own designed voices first, then the 30 basic ones, then the rest of the library
+  const opts = aiVoices.filter(v => v.mine).map(v => ({ id: v.id, label: '★ ' + v.label + ' (tvůj hlas)' }));
+  for (const [n, d, g] of AI_VOICES) opts.push({ id: n, label: n + ' – ' + d + ' (' + (g === 'm' ? 'muž' : 'žena') + ')' });
   for (const v of aiVoices) if (!opts.some(o => o.id === v.id)) opts.push({ id: v.id, label: v.label + (v.info ? ' – ' + v.info : '') });
   if (current && !opts.some(o => o.id === current) && !aiVoices.some(v => lc(v.label) === lc(current))) opts.unshift({ id: current, label: current });
   return opts;
@@ -602,9 +604,12 @@ function aiVoiceOptions(current) {
 function saveCast() { store.set('cast', cast); }
 // Reads the voice and the delivery instruction out of the code AI Studio shows under "Get code"
 function parseStudioCode(txt) {
-  const v = /["']?(?:voice_name|voiceName|voice_id|voiceId|voice)["']?\s*[:=]\s*["']([^"'\n]{1,80})["']/.exec(txt);
+  const idm = /\b(voice(?:key)?_(?!config\b|name\b|id\b|settings\b|type\b)[A-Za-z0-9_-]{4,})/.exec(txt);   // a designed or replicated voice has an identifier like voice_abc123
+  const short = txt.trim().length <= 80 && !/[{}\n=:]/.test(txt.trim()) ? txt.trim().replace(/^["']|["']$/g, '') : '';   // just a name or an identifier pasted alone
+  const v0 = /["']?(?:voice_name|voiceName|voice_id|voiceId|voice)["']?\s*[:=]\s*["']([^"'\n]{1,80})["']/.exec(txt);
   const styles = [], re = /["']?style["']?\s*[:=]\s*(?:"""([\s\S]*?)"""|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|`([^`]*)`)/g;
   let m; while ((m = re.exec(txt))) { const t = (m[1] || m[2] || m[3] || m[4] || '').replace(/\\n/g, ' ').replace(/\\(["'])/g, '$1').replace(/\s+/g, ' ').trim(); if (t && !styles.includes(t)) styles.push(t); }
+  const v = idm ? [0, idm[1]] : short ? [0, short] : v0;
   return { voice: v ? v[1].trim() : '', styles };
 }
 function renderCast() {
@@ -628,7 +633,7 @@ function renderCast() {
     const st = document.createElement('textarea'); st.value = c.style || ''; st.placeholder = 'Pokyn k přednesu (kdo to je a jak mluví)';
     st.onchange = () => { c.style = st.value.trim(); saveCast(); };
     const codeBtn = document.createElement('button'); codeBtn.textContent = '</>'; codeBtn.title = 'Vložit kód z AI Studia (Get code)';
-    const code = document.createElement('textarea'); code.className = 'code'; code.placeholder = 'Sem vlož kód z tlačítka „Get code“ v AI Studiu. Hlas a pokyn k přednesu se z něj vyplní samy.';
+    const code = document.createElement('textarea'); code.className = 'code'; code.placeholder = 'Sem vlož kód z tlačítka „Get code“ v AI Studiu, nebo jen označení hlasu (voice_…). Hlas a pokyn k přednesu se vyplní samy.';
     const note = document.createElement('div'); note.className = 'note';
     codeBtn.onclick = () => { code.classList.toggle('open'); if (code.classList.contains('open')) code.focus(); };
     code.oninput = () => {
@@ -662,12 +667,20 @@ async function loadAiVoices(quiet) {
     aiVoices = all.map(v => {
       const id = v.id || v.name || '';
       const g = lc(v.gender);
-      return { id, label: v.display_name || v.displayName || id,
+      const type = lc(v.type || v.voice_type || v.voiceType);
+      return { id, label: v.display_name || v.displayName || id, mine: /^voice(key)?_/i.test(id) || type === 'prompted' || type === 'replicated',
         info: [g.startsWith('f') ? 'žena' : g.startsWith('m') ? 'muž' : '', v.pitch || '', v.accent || ''].filter(Boolean).join(', ').slice(0, 40) };
-    }).filter(v => v.id).sort((a, b) => a.label.localeCompare(b.label));
+    }).filter(v => v.id).sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || a.label.localeCompare(b.label));
     store.set('aiVoices', aiVoices);
-    renderCast();
-    $('aiInfo').textContent = 'Načteno hlasů z knihovny: ' + aiVoices.length + '.';
+    for (const k in aiBadVoices) delete aiBadVoices[k];
+    aiVoiceWarned = false;
+    // a role that holds only the name of a voice gets its real identifier
+    for (const c of cast) { const hit = aiVoices.find(x => x.id === c.voice) || aiVoices.find(x => lc(x.label) === lc(c.voice)); if (hit) c.voice = hit.id; }
+    saveCast(); renderCast();
+    const mine = aiVoices.filter(v => v.mine);
+    $('aiInfo').textContent = 'Načteno hlasů: ' + aiVoices.length + '. ' + (mine.length
+      ? 'Tvoje vlastní hlasy (' + mine.length + '): ' + mine.map(v => v.label).join(', ') + '. V seznamu jsou nahoře s hvězdičkou.'
+      : 'Žádný tvůj vlastní hlas mezi nimi není. Hlas navržený v AI Studiu je vidět jen tehdy, když patří ke stejnému projektu jako klíč (Vypravy). Jinak vlož jeho označení (voice_…) tlačítkem </> u role.');
   } catch (e) { if (!quiet) $('aiInfo').textContent = 'Hlasy z knihovny se nepodařilo načíst (' + e.message + '). Základních 30 hlasů funguje i tak.'; }
 }
 
@@ -696,7 +709,7 @@ function geminiStream(voice, style, text) {
       res = await call(model, fmt, v);
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
-        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '.', 'err'); }
+        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst všechny hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
         aiBadVoices[model + '|' + v] = true;
         v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
       }
@@ -1740,7 +1753,7 @@ function sendTyped() {
 
 // ---------- Settings ----------
 $('apiKey').value = store.get('apiKey', '');
-if (store.get('ver2', 0) < 1) { store.set('ver2', 1); store.set('engine', 'live'); }   // try the live voices
+if (store.get('ver2', 0) < 2) { store.set('ver2', 2); store.set('engine', 'gemini'); }   // back to the read voices to try the designed ones
 $('engine').value = store.get('engine', 'live');
 $('aiKey').value = store.get('aiKey', '');
 $('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
