@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. c</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. d</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -98,6 +98,13 @@
       <option value="mac">Starší: hlasy Macu</option>
     </select>
     <div class="hint">Živé hlasy umí jen 30 základních hlasů ze seznamu, vlastní hlasy z AI Studia zatím ne.</div>
+    <label>Tempo řeči</label>
+    <select id="tempo">
+      <option value="">Podle hlasu a role (pomalejší)</option>
+      <option value="svižným tempem, bez dlouhých pauz">Svižné</option>
+      <option value="rychle a energicky, bez pauz mezi větami">Rychlé</option>
+    </select>
+    <div class="hint">Diktování k zapsání zůstává vždy pomalé.</div>
 
     <div id="aiBox">
       <details id="creator" open>
@@ -746,6 +753,8 @@ function geminiStream(voice, style, text) {
 // ---------- Live voices (Gemini Live API): no daily request limit ----------
 // One open connection per voice. A line is sent as text and the voice reads it; sound comes back in small pieces.
 const isAi = p => p === 'gemini' || p === 'live';
+// what the voice is told about delivery for one line: the chosen tempo (not while dictating) and the mood from the GM
+function delivery(mood) { return [mood === DICT_MOOD ? '' : $('tempo').value, mood || ''].filter(Boolean).join('; '); }
 const LIVE_MODEL = 'gemini-3.8-live';
 const LIVE_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=';
 const liveSessions = {};
@@ -862,7 +871,7 @@ function liveStream(voice, style, text, mood) {
         } };
       // stopping the GM: the only way to stop a line already being generated is to drop the connection
       signal.addEventListener('abort', () => { if (ses.cur === c) { ses.dead = true; try { ses.ws.close(); } catch (e) {} end(Object.assign(new Error('přerušeno'), { name: 'AbortError' })); } });
-      try { ses.ws.send(JSON.stringify({ realtimeInput: { text: (mood ? '(' + mood + ') ' : '') + '«' + text + '»' } })); watchdog(10000); }
+      try { ses.ws.send(JSON.stringify({ realtimeInput: { text: (delivery(mood) ? '(' + delivery(mood) + ') ' : '') + '«' + text + '»' } })); watchdog(10000); }
       catch (e) { ses.dead = true; end(new Error('Živé hlasy: nepodařilo se odeslat text.')); }
     }, e => end(e));
   }));
@@ -1025,7 +1034,7 @@ function startItem(item) {
     item.stream = liveStream(c.voice, c.style, text, mood);
   } else if (isAi(provider)) {
     const c = castFor(role);
-    const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
+    const style = [c.style, delivery(mood) ? 'Právě teď: ' + delivery(mood) + '.' : ''].filter(Boolean).join(' ');
     item.stream = geminiStream(c.voice, style, text);
   } else {
     item.p = fetchAudio(provider, voiceId, text); item.p.catch(() => {}); // reported when played
@@ -1736,6 +1745,8 @@ $('engine').value = store.get('engine', 'live');
 $('aiKey').value = store.get('aiKey', '');
 $('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
 $('aiModel').onchange = () => store.set('aiModel', $('aiModel').value);
+$('tempo').value = store.get('tempo', 'svižným tempem, bez dlouhých pauz');
+$('tempo').onchange = () => store.set('tempo', $('tempo').value);
 $('aiKey').onchange = () => { store.set('aiKey', $('aiKey').value.trim()); if (!aiVoices.length) loadAiVoices(true); };
 $('aiLoad').onclick = () => { store.set('aiKey', $('aiKey').value.trim()); loadAiVoices(false); };
 $('castAdd').onclick = () => { cast.splice(Math.max(0, cast.length - 1), 0, { role: 'Nová postava', voice: 'Puck', style: '' }); saveCast(); renderCast(); };
@@ -1785,6 +1796,7 @@ function saveSettings() {
   store.set('gKey', $('gKey').value.trim());
   store.set('aiKey', $('aiKey').value.trim());
   store.set('aiModel', $('aiModel').value);
+  store.set('tempo', $('tempo').value);
   saveCast();
   for (const id of ROLE_SELECTS) if ($(id).value) store.set(id + '_' + engine(), $(id).value);
 }
