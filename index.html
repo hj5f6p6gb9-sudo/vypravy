@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. g</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. h</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -93,6 +93,7 @@
     <select id="engine">
       <option value="live">Živé hlasy z AI Studia – bez denního limitu (zkouška)</option>
       <option value="gemini">Čtené hlasy z AI Studia – výraznější, ale jen 100 požadavků denně</option>
+      <option value="gcloud">Čtené hlasy přes Google Cloud – bez denního limitu, jen základní hlasy (zkouška)</option>
       <option value="google">Starší: Google Chirp 3 HD</option>
       <option value="el">Starší: ElevenLabs</option>
       <option value="mac">Starší: hlasy Macu</option>
@@ -776,7 +777,7 @@ function geminiStream(voice, style, text) {
 }
 // ---------- Live voices (Gemini Live API): no daily request limit ----------
 // One open connection per voice. A line is sent as text and the voice reads it; sound comes back in small pieces.
-const isAi = p => p === 'gemini' || p === 'live';
+const isAi = p => p === 'gemini' || p === 'live' || p === 'gcloud';
 // what the voice is told about delivery for one line: the chosen tempo (not while dictating) and the mood from the GM
 function delivery(mood) { return [mood === DICT_MOOD ? '' : $('tempo').value, mood || ''].filter(Boolean).join('; '); }
 const LIVE_MODEL = 'gemini-3.8-live';
@@ -848,7 +849,7 @@ function liveWarm() {   // open the connections of the main voices ahead, so the
 }
 function liveVoice(v) {
   if (AI_VOICES.some(x => x[0] === v)) return v;
-  if (!liveVoiceWarned) { liveVoiceWarned = true; addLine('Chyba', 'Živé hlasy neumí hlas „' + v + '“, místo něj mluví ' + AI_FALLBACK_VOICE + '. V obsazení vyber jeden ze 30 základních hlasů.', 'err'); }
+  if (!liveVoiceWarned) { liveVoiceWarned = true; addLine('Chyba', 'Tento způsob mluvení neumí vlastní hlas „' + v + '“, místo něj mluví ' + AI_FALLBACK_VOICE + '. V obsazení vyber jeden ze 30 základních hlasů.', 'err'); }
   return AI_FALLBACK_VOICE;
 }
 function liveStream(voice, style, text, mood) {
@@ -981,6 +982,28 @@ function showUsage() {
   $('aiUsage').textContent = 'Přečteno novými hlasy: ' + store.get('chars_gemini', 0) + ' znaků';
 }
 
+// Read voices through Google Cloud (older Gemini voice models; per-minute limits, no daily cap)
+const GCLOUD_MODELS = ['gemini-2.5-flash-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-lite-preview-tts'];
+let gcloudModel = 0;
+async function fetchCloudGemini(voice, style, text) {
+  const key = $('gKey').value.trim();
+  let last = null;
+  for (let i = gcloudModel; i < GCLOUD_MODELS.length; i++) {
+    const r = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(key), {
+      method: 'POST', signal: elAbort.signal, headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: style ? { text, prompt: style } : { text }, voice: { languageCode: 'cs-CZ', name: voice, modelName: GCLOUD_MODELS[i] }, audioConfig: { audioEncoding: 'MP3' } }) });
+    if (r.ok) {
+      gcloudModel = i;
+      const data = await r.json(), bin = atob(data.audioContent), bytes = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+      return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+    }
+    last = Object.assign(new Error('Google Cloud ' + r.status + ' (' + GCLOUD_MODELS[i] + '): ' + (await r.text()).slice(0, 300)), { status: r.status });
+    logEv('HLAS', last.message);
+    if (r.status === 401 || r.status === 403 || r.status === 429) break;   // the key is not let in, or a limit: another model will not help
+  }
+  throw last;
+}
 function fetchAudio(provider, voiceId, text) {
   if (provider === 'google') {
     const key = $('gKey').value.trim();
@@ -1032,7 +1055,7 @@ function playUrl(url, gen) {
   }).then(() => URL.revokeObjectURL(url));
 }
 function makeItem(role, text, provider, mood) {
-  const key = (isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
+  const key = (provider === 'gcloud' ? $('gKey') : isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
   const voiceId = isAi(provider) ? castFor(role).voice : $(roleSelect(role)).value;
   if (!key || !voiceId) {
     if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', isAi(provider) ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
@@ -1052,6 +1075,10 @@ function startItem(item) {
     if (!$('gKey').value.trim()) { item.p = Promise.reject(Object.assign(new Error('limit'), { name: 'AbortError' })); item.p.catch(() => {}); return; }
     item.p = fetchAudio('google', chirpFor(role), text); item.p.catch(() => {});
     logEv('HLAS', 'starší hlas (limit nových hlasů)');
+  } else if (provider === 'gcloud') {
+    const c = castFor(role);
+    const style = [c.style, delivery(mood) ? 'Právě teď: ' + delivery(mood) + '.' : ''].filter(Boolean).join(' ');
+    item.p = fetchCloudGemini(liveVoice(c.voice), style, text); item.p.catch(() => {});
   } else if (provider === 'live' && Date.now() >= liveDownUntil) {
     const c = castFor(role);
     item.live = true;
