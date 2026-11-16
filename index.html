@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 15. 11. g</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. a</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -89,6 +89,15 @@
     <label>Klíč Google Cloud (rozpoznávání řeči, začíná AIza…)</label>
     <input id="gKey" type="password" autocomplete="off">
     <div class="hint">Klíče se uloží jen v tomto prohlížeči.</div>
+    <label>Způsob mluvení</label>
+    <select id="engine">
+      <option value="live">Živé hlasy z AI Studia – bez denního limitu (zkouška)</option>
+      <option value="gemini">Čtené hlasy z AI Studia – výraznější, ale jen 100 požadavků denně</option>
+      <option value="google">Starší: Google Chirp 3 HD</option>
+      <option value="el">Starší: ElevenLabs</option>
+      <option value="mac">Starší: hlasy Macu</option>
+    </select>
+    <div class="hint">Živé hlasy umí jen 30 základních hlasů ze seznamu, vlastní hlasy z AI Studia zatím ne.</div>
 
     <div id="aiBox">
       <details id="creator" open>
@@ -128,13 +137,6 @@
       <select id="stt">
         <option value="google">Google – mikrofon pořád zapnutý (doporučeno)</option>
         <option value="chrome">Chrome – starší způsob</option>
-      </select>
-      <label>Jiné hlasy (starší možnosti)</label>
-      <select id="engine">
-        <option value="gemini">Hlasy z AI Studia (výchozí)</option>
-        <option value="google">Google Chirp 3 HD</option>
-        <option value="el">ElevenLabs</option>
-        <option value="mac">Hlasy Macu</option>
       </select>
       <div id="gBox">
         <div class="row"><button class="secondary" id="gLoad">Načíst české hlasy z Googlu</button></div>
@@ -739,6 +741,119 @@ function geminiStream(voice, style, text) {
   })().catch(e => { st.err = e; }).finally(() => { st.done = true; if (st.onData) st.onData(); });
   return st;
 }
+// ---------- Live voices (Gemini Live API): no daily request limit ----------
+// One open connection per voice. A line is sent as text and the voice reads it; sound comes back in small pieces.
+const isAi = p => p === 'gemini' || p === 'live';
+const LIVE_MODEL = 'gemini-3.8-live';
+const LIVE_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=';
+const liveSessions = {};
+let liveShape = store.get('liveShape', 0), liveVoiceWarned = false, liveDownUntil = 0;
+function liveSetup(shape, voice, style) {
+  const sys = { parts: [{ text: 'Jsi hlasový herec, který nahlas čte hotový text ve hře. Tvoje role: ' + (style || 'vypravěč') +
+    '\nPravidla: Každou zprávu přečti česky nahlas přesně slovo od slova, celou a jen jednou. Nic nepřidávej, nevynechávej, nepřekládej, nekomentuj a neodpovídej na otázky, které v textu jsou. ' +
+    'Poznámka v kulatých závorkách před textem je režijní pokyn k přednesu: nečti ji, jen se jí řiď. Čti jen to, co je mezi znaky « a ».' }] };
+  const speech = { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } };
+  if (shape === 0) return { setup: { model: 'models/' + LIVE_MODEL, generationConfig: { responseModalities: ['AUDIO'], speechConfig: speech }, systemInstruction: sys, outputAudioTranscription: {} } };
+  return { setup: { model: 'models/' + LIVE_MODEL, responseModalities: ['AUDIO'], speechConfig: speech, systemInstruction: sys, outputAudioTranscription: {} } };
+}
+function liveOpen(voice, style) {
+  const ses = { voice, turns: 0, born: Date.now(), cur: null, chain: Promise.resolve(), dead: false, ws: null };
+  ses.ready = new Promise((resolve, reject) => {
+    let settled = false, shape = liveShape;
+    const connect = () => {
+      const ws = new WebSocket(LIVE_URL + encodeURIComponent($('aiKey').value.trim()));
+      ws.binaryType = 'arraybuffer'; ses.ws = ws;
+      let gotSetup = false;
+      const dec = new TextDecoder();
+      ws.onopen = () => ws.send(JSON.stringify(liveSetup(shape, voice, style)));
+      ws.onmessage = ev => {
+        let m; try { m = JSON.parse(typeof ev.data === 'string' ? ev.data : dec.decode(ev.data)); } catch (e) { return; }
+        if (m.setupComplete !== undefined && !gotSetup) { gotSetup = true; if (shape !== liveShape) { liveShape = shape; store.set('liveShape', shape); } if (!settled) { settled = true; resolve(); } }
+        if (m.goAway) ses.turns = 999;   // the server is about to close this connection: use a fresh one next time
+        const sc = m.serverContent, c = ses.cur;
+        if (!sc || !c) return;
+        for (const part of (sc.modelTurn && sc.modelTurn.parts) || []) {
+          const inl = part.inlineData || part.inline_data; if (!inl || !inl.data) continue;
+          const r = /rate=(\d+)/.exec(inl.mimeType || inl.mime_type || ''); if (r) c.st.rate = parseInt(r[1], 10);
+          c.take(inl.data);
+        }
+        if (sc.outputTranscription && sc.outputTranscription.text) c.said += sc.outputTranscription.text;
+        if (sc.turnComplete || sc.generationComplete) c.finish();
+      };
+      ws.onerror = () => {};
+      ws.onclose = ev => {
+        if (!gotSetup && shape === liveShape && !settled) { shape = liveShape ? 0 : 1; return connect(); }   // try the other form of the opening message
+        ses.dead = true;
+        const why = 'Živé hlasy: spojení se zavřelo' + (ev.reason ? ' (' + String(ev.reason).slice(0, 200) + ')' : ' (kód ' + ev.code + ')');
+        if (!settled) { settled = true; reject(new Error(why)); }
+        if (ses.cur) ses.cur.finish(new Error(why));
+      };
+    };
+    connect();
+    setTimeout(() => { if (!settled) { settled = true; ses.ws && ses.ws.readyState === 1 ? resolve() : reject(new Error('Živé hlasy: spojení se nepodařilo navázat.')); } }, 6000);
+  });
+  ses.ready.catch(() => { ses.dead = true; });
+  return ses;
+}
+function liveSession(voice, style) {
+  const k = voice + '|' + (style || '');
+  let ses = liveSessions[k];
+  // a connection lasts 15 minutes at most and every line adds to what it remembers (and costs): renew it regularly
+  if (!ses || ses.dead || ses.turns >= 12 || Date.now() - ses.born > 8 * 60000) {
+    if (ses && !ses.dead) { const old = ses; old.chain.then(() => { try { old.ws.close(); } catch (e) {} }); }
+    ses = liveSessions[k] = liveOpen(voice, style);
+  }
+  return ses;
+}
+function liveWarm() {   // open the connections of the main voices ahead, so the first line starts at once
+  if (engine() !== 'live' || !$('aiKey').value.trim()) return;
+  for (const c of cast.slice(0, 2)) liveSession(liveVoice(c.voice), c.style);
+}
+function liveVoice(v) {
+  if (AI_VOICES.some(x => x[0] === v)) return v;
+  if (!liveVoiceWarned) { liveVoiceWarned = true; addLine('Chyba', 'Živé hlasy neumí hlas „' + v + '“, místo něj mluví ' + AI_FALLBACK_VOICE + '. V obsazení vyber jeden ze 30 základních hlasů.', 'err'); }
+  return AI_FALLBACK_VOICE;
+}
+function liveStream(voice, style, text, mood) {
+  const st = { chunks: [], done: false, err: null, rate: 24000, onData: null };
+  const signal = elAbort.signal, v = liveVoice(voice);
+  const ses = liveSession(v, style);
+  ses.turns++;
+  ses.chain = ses.chain.then(() => new Promise(next => {
+    const end = err => { if (st.done) return; if (err) st.err = err; st.done = true; ses.cur = null; clearTimeout(timer); if (st.onData) st.onData(); next(); };
+    let timer = null, odd = null;
+    const watchdog = ms => { clearTimeout(timer); timer = setTimeout(() => { ses.dead = true; try { ses.ws.close(); } catch (e) {} end(new Error('Živé hlasy: hlas neodpověděl včas.')); }, ms); };
+    if (signal.aborted) return end(Object.assign(new Error('přerušeno'), { name: 'AbortError' }));
+    ses.ready.then(() => {
+      if (signal.aborted) return end(Object.assign(new Error('přerušeno'), { name: 'AbortError' }));
+      const c = ses.cur = { st, said: '',
+        take(b64) {
+          const bin = atob(b64); let bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          if (odd !== null) { const j = new Uint8Array(bytes.length + 1); j[0] = odd; j.set(bytes, 1); bytes = j; odd = null; }
+          if (bytes.length % 2) { odd = bytes[bytes.length - 1]; bytes = bytes.subarray(0, bytes.length - 1); }
+          const n = bytes.length >> 1; if (!n) return;
+          const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), f = new Float32Array(n);
+          for (let i = 0; i < n; i++) f[i] = dv.getInt16(i * 2, true) / 32768;
+          st.chunks.push(f); watchdog(8000); if (st.onData) st.onData();
+        },
+        finish(err) {
+          if (!err && !st.chunks.length) err = new Error('Živé hlasy nevrátily žádný zvuk.');
+          if (!err && c.said) {   // did the voice read what it was given?
+            const want = norm(text), got = norm(c.said), hit = want.filter(w => got.includes(w)).length;
+            if (want.length >= 3 && (hit / want.length < 0.7 || got.length > want.length * 1.5 + 3)) logEv('HLAS', 'živý hlas se odchýlil od textu. Měl říct: „' + text + '“ Řekl: „' + c.said.trim() + '“');
+          }
+          end(err);
+        } };
+      // stopping the GM: the only way to stop a line already being generated is to drop the connection
+      signal.addEventListener('abort', () => { if (ses.cur === c) { ses.dead = true; try { ses.ws.close(); } catch (e) {} end(Object.assign(new Error('přerušeno'), { name: 'AbortError' })); } });
+      try { ses.ws.send(JSON.stringify({ realtimeInput: { text: (mood ? '(' + mood + ') ' : '') + '«' + text + '»' } })); watchdog(10000); }
+      catch (e) { ses.dead = true; end(new Error('Živé hlasy: nepodařilo se odeslat text.')); }
+    }, e => end(e));
+  }));
+  return st;
+}
+
 let pcmNodes = [];
 function playPcm(item, gen) {
   const st = item.stream; ensureOutCtx();
@@ -869,10 +984,10 @@ function playUrl(url, gen) {
   }).then(() => URL.revokeObjectURL(url));
 }
 function makeItem(role, text, provider, mood) {
-  const key = (provider === 'gemini' ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
-  const voiceId = provider === 'gemini' ? castFor(role).voice : $(roleSelect(role)).value;
+  const key = (isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
+  const voiceId = isAi(provider) ? castFor(role).voice : $(roleSelect(role)).value;
   if (!key || !voiceId) {
-    if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', provider === 'gemini' ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
+    if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', isAi(provider) ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
     return null;
   }
   const k = 'chars_' + provider;
@@ -889,7 +1004,11 @@ function startItem(item) {
     if (!$('gKey').value.trim()) { item.p = Promise.reject(Object.assign(new Error('limit'), { name: 'AbortError' })); item.p.catch(() => {}); return; }
     item.p = fetchAudio('google', chirpFor(role), text); item.p.catch(() => {});
     logEv('HLAS', 'starší hlas (limit nových hlasů)');
-  } else if (provider === 'gemini') {
+  } else if (provider === 'live' && Date.now() >= liveDownUntil) {
+    const c = castFor(role);
+    item.live = true;
+    item.stream = liveStream(c.voice, c.style, text, mood);
+  } else if (isAi(provider)) {
     const c = castFor(role);
     const style = [c.style, mood ? 'Právě teď: ' + mood + '.' : ''].filter(Boolean).join(' ');
     item.stream = geminiStream(c.voice, style, text);
@@ -971,7 +1090,17 @@ async function playNext(gen) {
     if (item.stream) {
       await waitUnheld();
       if (gen !== elGen) return;
-      try { await playPcm(item, gen); }
+      try {
+        try { await playPcm(item, gen); }
+        catch (e) {   // live voices failed: say the line with the read voices instead, and stay there for a minute
+          if (!item.live || e.name === 'AbortError' || gen !== elGen) throw e;
+          if (Date.now() >= liveDownUntil) addLine('Chyba', String(e.message || e) + ' Minutu budou mluvit čtené hlasy.', 'err');
+          liveDownUntil = Date.now() + 60000; item.live = false;
+          const c = castFor(item.role);
+          item.stream = geminiStream(c.voice, [c.style, item.mood ? 'Právě teď: ' + item.mood + '.' : ''].filter(Boolean).join(' '), item.text);
+          await playPcm(item, gen);
+        }
+      }
       catch (e) {
         if (e.status !== 429) throw e;
         quotaHit(); logEv('HLAS', 'nové hlasy narazily na limit, mluví starší hlas');
@@ -1083,7 +1212,7 @@ function makeStreamer() {
     if (isNl) { emit(sb + chunk, true); sb = ''; spokeAny = true; return; }
     if (!spokeAny) { emit(chunk, false); spokeAny = true; return; }
     sb += chunk;
-    if (sb.length > (engine() === 'gemini' ? 600 : 170)) { emit(sb, false); sb = ''; }   // new voices: fewer, longer requests
+    if (sb.length > (isAi(engine()) ? 600 : 170)) { emit(sb, false); sb = ''; }   // new voices: fewer, longer requests
   }
   return {
     feed(text) {
@@ -1587,7 +1716,8 @@ function sendTyped() {
 
 // ---------- Settings ----------
 $('apiKey').value = store.get('apiKey', '');
-$('engine').value = store.get('engine', 'gemini');
+if (store.get('ver2', 0) < 1) { store.set('ver2', 1); store.set('engine', 'live'); }   // try the live voices
+$('engine').value = store.get('engine', 'live');
 $('aiKey').value = store.get('aiKey', '');
 $('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
 $('aiModel').onchange = () => store.set('aiModel', $('aiModel').value);
@@ -1599,7 +1729,7 @@ $('elKey').value = store.get('elKey', '');
 $('gKey').value = store.get('gKey', '');
 gVoices = store.get('gVoices', []);
 elVoices = store.get('elVoices', []);
-function engineChanged() { $('aiBox').style.display = engine() === 'gemini' ? 'block' : 'none'; $('roleBox').style.display = engine() === 'gemini' ? 'none' : 'block';
+function engineChanged() { $('aiBox').style.display = isAi(engine()) ? 'block' : 'none'; $('roleBox').style.display = isAi(engine()) ? 'none' : 'block';
   $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = engine() === 'google' ? 'block' : 'none'; populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
@@ -1681,7 +1811,7 @@ $('newGame').onclick = () => {
   messages = []; store.set('messages', messages); gameLog = []; logEv('HRA', 'nová hra'); $('log').innerHTML = ''; hideStart(); gameStarted = true;
   $('settings').classList.remove('open');
   ensureOutCtx(); if (sttMode() === 'google') startMic();
-  tm = { end: performance.now(), silence: 0 };
+  tm = { end: performance.now(), silence: 0 }; liveWarm();
   askClaude('(Hráči si sedli ke stolu. Začni hru.)');
 };
 $('resumeGame').onclick = () => {
