@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. i</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. j</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -94,6 +94,7 @@
       <option value="el">ElevenLabs – nejvýraznější hlasy, platí se podle znaků</option>
       <option value="live">Živé hlasy z AI Studia – bez denního limitu (zkouška)</option>
       <option value="gemini">Čtené hlasy z AI Studia – výraznější, ale jen 100 požadavků denně</option>
+      <option value="vertex">Čtené hlasy přes Google Agent Platform – zkouška, jestli tam nejsou denní limity</option>
       <option value="google">Starší: Google Chirp 3 HD</option>
       <option value="mac">Starší: hlasy Macu</option>
     </select>
@@ -105,6 +106,11 @@
       <option value="rychle a energicky, bez pauz mezi větami">Rychlé</option>
     </select>
     <div class="hint">Diktování k zapsání zůstává vždy pomalé.</div>
+    <div id="vBox">
+      <label>Klíč Agent Platform (express mode, začíná AQ. nebo AIza…)</label>
+      <input id="vKey" type="password" autocomplete="off">
+      <div class="hint">Vytvoříš ho v Google Cloud Console v části Agent Platform / Vertex AI Studio (API keys). Uloží se jen v tomto prohlížeči. Hlasy a pokyny se berou z obsazení níže.</div>
+    </div>
     <div id="elBox">
       <label>Klíč ElevenLabs</label>
       <input id="elKey" type="password" autocomplete="off">
@@ -395,7 +401,15 @@ Karta: Lianna, elfka kouzelnice
 
 [PRO PJ] Řešení bez boje: když někdo ukáže nebo nasadí pečetní prsten, kostlivec skloní meč a znehybní. Krysy zaútočí tak jako tak. Nenapovídat.
 [PRO PJ] Boj: kostlivec a krysy podle družiny, krysy vylezou z pukliny ve 2. kole. Kostlivec se nehne od truhly a neútočí na postavy v bezvědomí; družina může ustoupit, odpočinout si a vrátit se. Drtivé zbraně kostlivcům dvojnásob.
-[PRO PJ] Poklad: 40 zlatých, lektvar léčení (vyléčí 2 kostky), útržek mapy hor s trpasličí runou pro „vchod“ (trpaslík ji pozná). Mezi kostmi kostlivcův krátký meč (zranění jedna kostka, bodný, lehký).
+[PRO PJ] Poklad: když hráč otevře truhlu, řekne Vypravěč doslovný text a Rádce pak nadiktuje, co si zapsat. Krátký meč se do diktátu přidá jen tehdy, když si ho hráč vezme.
+
+[DOSLOVA] Vypravěč: Víko se zvedne s dlouhým zavrzáním. V truhle se zalesknou zlaté mince, vedle nich stojí lahvička s rudou tekutinou a leží tam stočený kus pergamenu. Mezi kostmi v rohu se válí kostlivcův krátký meč.
+
+[DIKTÁT]
+- Čtyřicet zlatých. Když vás je víc, rozdělte si je.
+- Lektvar léčení. Když ho vypiješ, hodíš dvěma kostkami a tolik životů si vyléčíš.
+- Útržek mapy hor. Je na něm trpasličí runa, která znamená vchod.
+- (jen když si ho hráč vezme) Krátký meč: útok plus tolik jako u tvé zbraně na blízko, zranění jedna kostka.
 [PRO PJ] Puklina: úzká chodba asi 10 čtverečků ven ke břehu řeky; lze zavalit kamením.
 
 ## Nestvůry (SRD 5.1, jen šestistěnné kostky, obranné hody)
@@ -412,7 +426,11 @@ Karta: Lianna, elfka kouzelnice
 
 [DOSLOVA] Matouš: Sto let jsem čepoval pivo na hromadě zlata a nevěděl jsem o tom! Tady máte, co jsem slíbil. A tyhle hory na té vaší mapě znám. Říká se jim Šedé zuby. Odtamtud se nikdo nevrací se suchýma nohama… ani s prázdnýma rukama.
 
-[PRO PJ] Nakonec Rádce nadiktuje k zapsání (formou diktátu, podle toho, co družina skutečně získala): odměnu od Matouše, podíl ze 40 zlatých, lektvar, útržek mapy, případně meč a prsten, a 300 zkušeností každému = postup na 2. úroveň.
+[PRO PJ] Nakonec Rádce nadiktuje k zapsání jen to, co ještě zapsané není: odměnu od Matouše a zkušenosti.
+
+[DIKTÁT]
+- Odměna od Matouše: tolik zlatých, kolik jste si domluvili.
+- Tři sta zkušeností. Tím postupuješ na druhou úroveň. Co to znamená pro tvoji kartu, si řekneme na začátku příští výpravy.
 </script>
 <script>
 const SYSTEM_PROMPT = `Jsi Pán jeskyně (PJ) hry „Dobrodružné výpravy za poklady“. Hraje se u skutečného stolu: hráči mají papír, tužku, čtverečkovaný papír na mapu a šestistěnné kostky. Tvůj text se čte nahlas českým syntezátorem řeči a hráči ti odpovídají hlasem; jejich řeč se převádí na text a může obsahovat chyby rozpoznávání – domýšlej rozumně, a když si nejsi jistý, krátce se zeptej.
@@ -443,11 +461,13 @@ FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 - Čísla do dvaceti piš slovy ve správném pádě („hoď třemi kostkami“, „potřebuješ aspoň devět“, „zbývají ti čtyři životy“), aby je hlas přečetl přirozeně. Větší čísla piš číslicemi.
 - Kostky říkej slovy („hoď třemi kostkami“, „jedna kostka plus čtyři“). Nikdy nepiš ani neříkej zkratky jako 3k6, k6 nebo „k šesti“.
 - Mimo diktování po hráčích nežádej potvrzení typu „mám“ nebo „hotovo“. Odpověď hráče (jméno, volba, hod) je sama potvrzení, hned na ni navaž dalším krokem.
-- Mluv přirozeně jako zkušený vypravěč u stolu: obvykle 1–3 krátké věty, víc jen při popisu nového místa. Na konci jasně řekni, co mají hráči udělat nebo na co si hodit, ale nekonči pořád stejnou otázkou.
+- Mluv přirozeně jako zkušený vypravěč u stolu: obvykle 1–3 krátké věty, víc jen při popisu nového místa. Na konci jasně řekni, co mají hráči udělat nebo na co si hodit.
 - NIKDY NEOPAKUJ, CO HRÁČ PRÁVĚ ŘEKL. Když nahlásí hod („házím, šest“), neříkej „hodil jsi šest“, rovnou řekni, co se stalo. Když řekne, co dělá, nepopisuj to po něm znovu, řekni až následek. Nezačínej potvrzením typu „Dobře“, „Rozumím“, „Takže…“, „Výborně“. Neshrnuj, co už zaznělo. Nepokládej víc otázek najednou.
 - MLUV JAKO ČLOVĚK U STOLU, NE JAKO PŘEDČÍTAČ: krátké věty, jak se říkají nahlas, žádné výčty a souvětí na tři řádky. Klidně hovorově („Jo, to jde.“, „Hm, zkus to.“), ale česky správně. Reaguj na to, co hráč skutečně řekl, ne obecnou frází.
-- NEOPAKUJ SE: popis místa, který už zazněl, znovu neříkej (jen na „zopakuj“). Než odpovíš, podívej se na své poslední odpovědi a nepoužij stejný začátek, stejný konec ani stejnou otázku. Nekonči každou odpověď otázkou typu „Co uděláte?“; často stačí prostě domluvit a hráči se ozvou sami.
+- NEOPAKUJ SE: popis místa, který už zazněl, znovu neříkej (jen na „zopakuj“). Než odpovíš, podívej se na své poslední odpovědi a nepoužij stejný začátek, stejný konec ani stejnou otázku. 
 - Když v historii uvidíš „…(hráč mě přerušil)“, hráč ti skočil do řeči jako u stolu. K nedořečenému se nevracej, nezačínej znovu od začátku a neomlouvej se, prostě odpověz na to, co řekl. Když zbylá informace byla důležitá (např. číslo potřebné na hod), řekni ji jednou krátkou větou.
+- PŘEDEJ TAH: když domluvíš a na řadě jsou hráči, poslední věta jim to musí dát najevo. Krátce, dvěma třemi slovy, a pokaždé jinak: „Co uděláš?“, „Jsi na tahu.“, „Borymire?“, „Kam půjdeš?“, „Tvůj tah.“, „Co ty na to?“, „A teď ty.“, nebo konkrétně podle situace („Půjdeš k regálu, nebo k sudům?“). Stejnou formulaci nepoužij dvakrát za sebou. Výjimka: když hráč právě dostal pokyn k hodu nebo diktát, výzva už zazněla.
+- ŽÁDNÉ ZKRATKY PRAVIDEL: hráč nemusí znát herní hantýrku. Neříkej „vyléčí dvě kostky“ ani „zranění jedna kostka, bodný, lehký“. Řekni to celou větou: „Když ho vypiješ, hodíš dvěma kostkami a tolik životů si vyléčíš.“, „Krátký meč: zranění jedna kostka. Je lehký, dá se s ním bodat.“ Nepoužívej slova, která hráči nic neřeknou (bodný, lehký, finesa, záchrana, výhoda), bez vysvětlení.
 - „Zopakuj“ = zopakuj poslední popis. „Stop“ = odpověz jen „Rádce: Čekám.“ „Pokračuj“ = pokračuj, kde jste skončili.
 
 DIKTOVÁNÍ (karta postavy, mapa, odměny, cokoli k zapsání nebo zakreslení) probíhá vždycky stejně:
@@ -746,20 +766,25 @@ function aiBody(fmt, voice, style, text) {
 function geminiStream(voice, style, text) {
   const st = { chunks: [], done: false, err: null, rate: 24000, onData: null };
   const key = $('aiKey').value.trim(), signal = elAbort.signal;
-  const call = (model, fmt, v) => fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
-    method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(aiBody(fmt, v, style, text)) });
+  const viaV = engine() === 'vertex', vkey = $('vKey').value.trim();
+  // Agent Platform (express mode): same voice models, Google Cloud quotas instead of the AI Studio daily cap
+  const call = (model, fmt, v) => viaV
+    ? fetch('https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(vkey), {
+        method: 'POST', signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify(aiBody(fmt, v, style, text)) })
+    : fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
+        method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(aiBody(fmt, v, style, text)) });
   (async () => {
     // Each voice model has its own small daily and per-minute allowance, so when one runs out we move on to the next.
-    const models = [$('aiModel').value].concat(AI_MODELS.filter(m => m !== $('aiModel').value)).filter(m => Date.now() >= (aiModelBlocked[m] || 0));
+    const models = (viaV ? ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts'] : [$('aiModel').value].concat(AI_MODELS.filter(m => m !== $('aiModel').value))).filter(m => Date.now() >= (aiModelBlocked[(viaV ? 'v:' : '') + m] || 0));
     let res = null, lastErr = null;
     for (const model of models) {
       let v = aiVoiceId(voice), fmt = aiFmtBy[model] || 0;
-      if (aiBadVoices[model + '|' + v]) v = AI_FALLBACK_VOICE;   // already known not to work: do not waste a request on it
+      if (aiBadVoices[(viaV ? 'v:' : '') + model + '|' + v]) v = AI_FALLBACK_VOICE;   // already known not to work: do not waste a request on it
       res = await call(model, fmt, v);
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
         if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst moje hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
-        aiBadVoices[model + '|' + v] = true;
+        aiBadVoices[(viaV ? 'v:' : '') + model + '|' + v] = true;
         v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
       }
       if (!res.ok && res.status === 400 && fmt === 0) {   // older request format
@@ -771,9 +796,9 @@ function geminiStream(voice, style, text) {
       lastErr = Object.assign(new Error('Nové hlasy ' + res.status + ': ' + body.slice(0, 250)), { status: res.status });
       if (res.status === 429) {
         const daily = /per.?day|daily/i.test(body);
-        aiModelBlocked[model] = Date.now() + (daily ? 30 * 60000 : 60000);
+        aiModelBlocked[(viaV ? 'v:' : '') + model] = Date.now() + (daily ? 30 * 60000 : 60000);
         logEv('HLAS', 'model ' + model + ' je na limitu (' + (daily ? 'denním' : 'minutovém') + ')');
-      } else if (res.status === 404 || res.status === 400) aiModelBlocked[model] = Date.now() + 30 * 60000;   // model not available for this key
+      } else if (res.status === 404 || res.status === 400) aiModelBlocked[(viaV ? 'v:' : '') + model] = Date.now() + 30 * 60000;   // model not available for this key
       else break;
       res = null;
     }
@@ -814,7 +839,7 @@ function geminiStream(voice, style, text) {
 }
 // ---------- Live voices (Gemini Live API): no daily request limit ----------
 // One open connection per voice. A line is sent as text and the voice reads it; sound comes back in small pieces.
-const isAi = p => p === 'gemini' || p === 'live';
+const isAi = p => p === 'gemini' || p === 'live' || p === 'vertex';
 const usesCast = p => isAi(p) || p === 'el';
 // what the voice is told about delivery for one line: the chosen tempo (not while dictating) and the mood from the GM
 function delivery(mood) { return [mood === DICT_MOOD ? '' : $('tempo').value, mood || ''].filter(Boolean).join('; '); }
@@ -1113,7 +1138,7 @@ function playUrl(url, gen) {
   }).then(() => URL.revokeObjectURL(url));
 }
 function makeItem(role, text, provider, mood) {
-  const key = (isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
+  const key = (provider === 'vertex' ? $('vKey') : isAi(provider) ? $('aiKey') : provider === 'google' ? $('gKey') : $('elKey')).value.trim();
   const voiceId = isAi(provider) ? castFor(role).voice : provider === 'el' ? elVoiceFor(castFor(role)) : $(roleSelect(role)).value;
   if (!key || !voiceId) {
     if (Date.now() - keyWarned > 15000) { keyWarned = Date.now(); addLine('Chyba', isAi(provider) ? 'Nové hlasy: v Nastavení chybí klíč z AI Studia.' : 'Hlasy: chybí klíč nebo hlas v Nastavení.', 'err'); }
@@ -1159,7 +1184,7 @@ function cloudSpeak(role, text, provider, endsLine, mood) {
 
 // ---------- Dictation: one line, then wait until the player says "dál" ----------
 const DICT_MOOD = 'pomalu a zřetelně, diktuješ k zapsání';
-const DICT_NEXT = ['dal', 'dale', 'dalsi', 'pokracuj', 'pokracujeme', 'pokracovat', 'pokracuje', 'dobre', 'jasne', 'mam', 'hotovo', 'zapsano', 'napsano', 'muzes', 'muzeme', 'jedeme', 'ok', 'jo', 'ano'];
+const DICT_NEXT = ['dal', 'dale', 'dalsi', 'pokracuj', 'pokracujeme', 'pokracovat', 'pokracuje', 'dobre', 'jasne', 'dik', 'diky', 'dekuju', 'dekuji', 'nakresleno', 'nakreslil', 'nakreslila', 'zapsal', 'zapsala', 'super', 'jo', 'mam', 'hotovo', 'zapsano', 'napsano', 'muzes', 'muzeme', 'jedeme', 'ok', 'jo', 'ano'];
 const DICT_REPEAT = ['zopakuj', 'opakuj', 'znovu', 'jeste', 'coze', 'nestihl', 'nerozumel'];
 const DICT_ASK = ['co', 'kolik', 'jak', 'proc', 'kde', 'kdy', 'ktery', 'ktera', 'znamena', 'radce', 'pane', 'pockej', 'stop', 'nechci', 'chci'];
 let dictGate = null, dictSkip = false;
@@ -1728,7 +1753,7 @@ function endSeg(pushToTalk) {
   const spec = mic.spec && mic.spec.voiced === voiced ? mic.spec.req : null;
   const waited = mic.belowMs;
   mic.frames = []; mic.barge = false; mic.held = false; mic.spec = null;
-  if (!forced && voiced < (dictMode() ? 140 : 300)) { if (barge) resumePJ(); else if (!pjActive()) idleStatus(); return; } // a click or a cough
+  if (!forced && voiced < (dictMode() ? 120 : 170)) { if (barge) resumePJ(); else if (!pjActive()) idleStatus(); return; } // a click or a cough
   tm = { end: performance.now(), silence: forced ? 0 : waited };
   transcribeSeg(frames, barge, ratio, spec);
 }
@@ -1773,7 +1798,7 @@ function pcm16b64(frames) {
   return btoa(bin);
 }
 
-const STT_PHRASES = ['Borymira', 'vezmu si Borymira', 'za Borymira', 'Pepina', 'za Pepina', 'Bratra Ondřeje', 'Ondřeje', 'Liannu', 'za Liannu', 'trpaslíka', 'půlčíka', 'klerika', 'kouzelnici', 'elfku', 'dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
+const STT_PHRASES = ['mám', 'dík', 'díky', 'děkuju', 'jasně', 'jo', 'ne', 'jedna', 'dva', 'tři', 'čtyři', 'pět', 'šest', 'sedm', 'osm', 'devět', 'deset', 'jedenáct', 'dvanáct', 'třináct', 'čtrnáct', 'patnáct', 'šestnáct', 'sedmnáct', 'osmnáct', 'padlo', 'Borymira', 'vezmu si Borymira', 'za Borymira', 'Pepina', 'za Pepina', 'Bratra Ondřeje', 'Ondřeje', 'Liannu', 'za Liannu', 'trpaslíka', 'půlčíka', 'klerika', 'kouzelnici', 'elfku', 'dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
   'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování'];
@@ -1874,7 +1899,7 @@ $('gKey').value = store.get('gKey', '');
 gVoices = store.get('gVoices', []);
 elVoices = store.get('elVoices', []);
 function engineChanged() { $('aiBox').style.display = usesCast(engine()) ? 'block' : 'none'; $('roleBox').style.display = usesCast(engine()) ? 'none' : 'block';
-  $('aiOnly').style.display = isAi(engine()) ? 'block' : 'none'; if (typeof renderCast === 'function') renderCast();
+  $('aiOnly').style.display = (engine() === 'gemini' || engine() === 'live') ? 'block' : 'none'; $('vBox').style.display = engine() === 'vertex' ? 'block' : 'none'; if (typeof renderCast === 'function') renderCast();
   $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = engine() === 'google' ? 'block' : 'none'; populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
@@ -1892,6 +1917,7 @@ function saveSettingsVoicesOnly() { /* remember voices of the engine we are leav
 $('elLoad').onclick = () => { store.set('elKey', $('elKey').value.trim()); loadElVoices(); };
 (() => { const ms = store.get('elModels', []); if (ms.length) { $('elModel').innerHTML = ''; for (const m of ms) { const op = document.createElement('option'); op.value = m.model_id; op.textContent = (m.name || m.model_id) + ' (' + m.model_id + ')'; $('elModel').appendChild(op); } }
   $('elModel').value = store.get('elModel', 'eleven_v3'); if (!$('elModel').value) $('elModel').selectedIndex = 0; })();
+$('vKey').value = store.get('vKey', ''); $('vKey').onchange = () => store.set('vKey', $('vKey').value.trim());
 $('elModel').onchange = () => { store.set('elModel', $('elModel').value); elPlain = false; elNoStream = false; };
 $('elReset').onclick = () => { store.set('chars_el', 0); showUsage(); };
 $('gLoad').onclick = () => { store.set('gKey', $('gKey').value.trim()); loadGVoices(); };
@@ -1917,6 +1943,7 @@ function saveSettings() {
   store.set('elKey', $('elKey').value.trim());
   store.set('gKey', $('gKey').value.trim());
   store.set('aiKey', $('aiKey').value.trim());
+  store.set('vKey', $('vKey').value.trim());
   store.set('aiModel', $('aiModel').value);
   store.set('tempo', $('tempo').value);
   saveCast();
