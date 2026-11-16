@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. j</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. k</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -756,6 +756,7 @@ async function loadAiVoices(quiet) {
 // One streamed speech request. Audio arrives in pieces (raw 16-bit sound) and is played as it comes.
 let aiFmtBy = store.get('aiFmtBy', {}), aiVoiceWarned = false, aiModelBlocked = {}, aiLastModel = '';
 const aiBadVoices = {};
+let vProject = store.get('vProject', ''), vPermWarned = false;
 const AI_MODELS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
 function aiBody(fmt, voice, style, text) {
   if (fmt === 0) return { contents: [{ role: 'user', parts: [style ? { text, speech_metadata: { style } } : { text }] }],
@@ -768,8 +769,11 @@ function geminiStream(voice, style, text) {
   const key = $('aiKey').value.trim(), signal = elAbort.signal;
   const viaV = engine() === 'vertex', vkey = $('vKey').value.trim();
   // Agent Platform (express mode): same voice models, Google Cloud quotas instead of the AI Studio daily cap
+  // with the project known, ask the global location (own voices live only there); otherwise Google picks a region itself
+  const vUrl = model => vProject ? 'https://aiplatform.googleapis.com/v1/projects/' + vProject + '/locations/global/publishers/google/models/' + model
+                                 : 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model;
   const call = (model, fmt, v) => viaV
-    ? fetch('https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(vkey), {
+    ? fetch(vUrl(model) + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(vkey), {
         method: 'POST', signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify(aiBody(fmt, v, style, text)) })
     : fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', {
         method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(aiBody(fmt, v, style, text)) });
@@ -781,6 +785,14 @@ function geminiStream(voice, style, text) {
       let v = aiVoiceId(voice), fmt = aiFmtBy[model] || 0;
       if (aiBadVoices[(viaV ? 'v:' : '') + model + '|' + v]) v = AI_FALLBACK_VOICE;   // already known not to work: do not waste a request on it
       res = await call(model, fmt, v);
+      if (viaV && !res.ok && !vProject) {   // the error names the project and the region Google picked: switch to the global location
+        const m = /projects\/(\d+)\/locations\/([a-z0-9-]+)/.exec(await res.clone().text());
+        if (m && m[2] !== 'global') { vProject = m[1]; store.set('vProject', vProject); logEv('HLAS', 'Agent Platform: projekt ' + vProject + ', přepínám na globální umístění'); res = await call(model, fmt, v); }
+      }
+      if (viaV && res.status === 403 && !vPermWarned) {
+        const t = await res.clone().text();
+        if (/aiplatform\.endpoints\.predict|PERMISSION_DENIED/i.test(t)) { vPermWarned = true; addLine('Chyba', 'Agent Platform: klíč prošel, ale jeho servisní účet nemá oprávnění. V Google Cloud mu přidej roli Vertex AI User (případně Agent Platform User).', 'err'); }
+      }
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
         if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst moje hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
