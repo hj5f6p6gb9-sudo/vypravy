@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. b</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. c</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -407,6 +407,8 @@ SCÉNÁŘ JE ZÁVAZNÝ (nejdůležitější pravidlo):
 - Řádky [DIKTÁT] nadiktuj přesně a ve stejném pořadí způsobem popsaným v části DIKTOVÁNÍ.
 - Text [PRO PJ] hráčům nečti. Je to podklad, podle kterého odpovídáš.
 - Vlastními slovy mluv jen tehdy, když hráči řeknou nebo udělají něco, na co scénář doslovný text nemá. I pak se drž faktů ze scénáře a nic si nepřimýšlej: žádné nové postavy, předměty, místnosti, sliby ani odměny. Když scénář odpověď nezná, postava to prostě neví.
+
+ZKOMOLENÁ SLOVA: rozpoznávání řeči často komolí jména a krátká slova (např. „bolí mě“ nebo „bolí Mira“ místo „Borymira“, „pepř“ místo „Pepina“). Když odpověď hráče zní podobně jako jedna z možností, které právě má, ber ji jako tu možnost a pokračuj. Když si opravdu nejsi jistý, zeptej se jednou krátkou větou („Rozuměl jsem Borymir, je to tak?“). Doslovný text, který už zazněl, kvůli nejasné odpovědi NIKDY neopakuj celý.
 
 RÁDCE JE VĚCNÝ: Rádce nevtipkuje, nekomentuje, co hráč řekl, a nepřidává poznámky ani pozdravy navíc. Řekne jen to, co je potřeba k dalšímu kroku. Rozpoznávání řeči občas zkomolí slova (třeba „v postavě“ na „v posteli“); divná nebo nesouvisející slova v řeči hráče tiše přejdi a nereaguj na ně. Vtip a barvitost patří jen postavám a Vypravěči, a i tam jen podle scénáře.
 
@@ -779,8 +781,8 @@ function liveOpen(voice, style) {
         }
         if (sc.outputTranscription && sc.outputTranscription.text) c.said += sc.outputTranscription.text;
         // the sound is complete at generationComplete; the connection is free for the next line only after turnComplete
-        if (sc.generationComplete) c.finish();
-        if (sc.turnComplete) { c.finish(); c.release(); }
+        // A line ends at generationComplete. turnComplete can arrive seconds later (even after the next line was sent), so it is not used.
+        if (sc.generationComplete && c.st.chunks.length) c.finish();
       };
       ws.onerror = () => {};
       ws.onclose = ev => {
@@ -828,8 +830,10 @@ function liveStream(voice, style, text, mood) {
       if (st.done) return;
       if (err) st.err = err;
       st.done = true; clearTimeout(timer); if (st.onData) st.onData();
-      if (err) release(); else setTimeout(release, 4000);   // normally released by turnComplete; this is only a safety net
+      clearTimeout(idle);
+      if (err) release(); else setTimeout(release, 250);
     };
+    let idle = null;
     let timer = null, odd = null;
     const watchdog = ms => { clearTimeout(timer); timer = setTimeout(() => { ses.dead = true; try { ses.ws.close(); } catch (e) {} end(new Error('Živé hlasy: hlas neodpověděl včas.')); }, ms); };
     if (signal.aborted) return end(Object.assign(new Error('přerušeno'), { name: 'AbortError' }));
@@ -845,6 +849,7 @@ function liveStream(voice, style, text, mood) {
           const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), f = new Float32Array(n);
           for (let i = 0; i < n; i++) f[i] = dv.getInt16(i * 2, true) / 32768;
           st.chunks.push(f); watchdog(8000); if (st.onData) st.onData();
+          clearTimeout(idle); idle = setTimeout(() => c.finish(), 2500);   // safety net if the end of the line is never announced
         },
         finish(err) {
           if (st.done) return;
@@ -1641,7 +1646,7 @@ function pcm16b64(frames) {
   return btoa(bin);
 }
 
-const STT_PHRASES = ['dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
+const STT_PHRASES = ['Borymira', 'vezmu si Borymira', 'za Borymira', 'Pepina', 'za Pepina', 'Bratra Ondřeje', 'Ondřeje', 'Liannu', 'za Liannu', 'trpaslíka', 'půlčíka', 'klerika', 'kouzelnici', 'elfku', 'dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
   'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování'];
