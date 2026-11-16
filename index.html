@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. e</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. f</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -112,7 +112,7 @@
         <div class="hint">Každá role má svůj hlas a pokyn k přednesu. ▶ = poslechnout. &lt;/&gt; = vložit kód z tlačítka „Get code“ v AI Studiu (nebo jen označení hlasu voice_…), hlas a pokyn se z něj vyplní samy. Vlastní hlasy fungují jen u čtených hlasů. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
         <div id="castList"></div>
         <div class="row"><button class="secondary" id="castAdd">+ Přidat postavu</button><button class="secondary" id="castReset">Vrátit výchozí obsazení</button></div>
-        <div class="row"><button class="secondary" id="aiLoad">Načíst všechny hlasy z AI Studia</button></div>
+        <div class="row"><button class="secondary" id="aiLoad">Načíst moje hlasy z AI Studia</button></div>
         <div class="hint" id="aiInfo"></div>
         <div class="hint" id="aiUsage"></div>
       </details>
@@ -582,7 +582,7 @@ const CAST_FIXED = ['Vypravěč', 'Rádce', 'Ostatní postavy'];
 const CAST_SAMPLE = { 'Vypravěč': 'Dveře se se skřípěním rozjedou. Pod helmou nejsou oči, jen prázdné jamky. Kostlivec pomalu zvedne meč.',
   'Rádce': 'Hoď třemi kostkami a řekni mi součet.' };
 let cast = store.get('cast', null) || JSON.parse(JSON.stringify(CAST_DEFAULT));
-let aiVoices = store.get('aiVoices', []);   // extended library: [{id, label, info}]
+let aiVoices = store.get('aiVoices', []).filter(v => v.mine);   // extended library: [{id, label, info}]
 function lc(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
 function castFor(role) {
   const r = lc(role);
@@ -594,12 +594,11 @@ function aiVoiceId(v) {   // a name picked in the cast -> the id the API wants
   return hit ? hit.id : v;
 }
 function aiVoiceOptions(current) {
-  // your own designed voices first, then the 30 basic ones, then the rest of the library
-  const opts = aiVoices.filter(v => v.mine).map(v => ({ id: v.id, label: '★ ' + v.label + ' (tvůj hlas)' }));
-  for (const [n, d, g] of AI_VOICES) opts.push({ id: n, label: n + ' – ' + d + ' (' + (g === 'm' ? 'muž' : 'žena') + ')' });
-  for (const v of aiVoices) if (!opts.some(o => o.id === v.id)) opts.push({ id: v.id, label: v.label + (v.info ? ' – ' + v.info : '') });
-  if (current && !opts.some(o => o.id === current) && !aiVoices.some(v => lc(v.label) === lc(current))) opts.unshift({ id: current, label: current });
-  return opts;
+  // two groups only: your own voices, then the 30 basic ones
+  const mine = aiVoices.filter(v => v.mine).map(v => ({ id: v.id, label: v.label, group: 'Tvoje hlasy' }));
+  const base = AI_VOICES.map(([n, d, g]) => ({ id: n, label: n + ' – ' + d + ' (' + (g === 'm' ? 'muž' : 'žena') + ')', group: 'Základní hlasy' }));
+  if (current && !mine.some(o => o.id === current) && !base.some(o => o.id === current)) mine.push({ id: current, label: current, group: 'Tvoje hlasy' });
+  return mine.concat(base);
 }
 function saveCast() { store.set('cast', cast); }
 // Reads the voice and the delivery instruction out of the code AI Studio shows under "Get code"
@@ -622,7 +621,11 @@ function renderCast() {
     name.onchange = () => { c.role = name.value.trim() || c.role; saveCast(); };
     const sel = document.createElement('select');
     const cur = aiVoiceId(c.voice);
-    for (const o of aiVoiceOptions(cur)) { const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; sel.appendChild(op); }
+    let grp = null;
+    for (const o of aiVoiceOptions(cur)) {
+      if (!grp || grp.label !== o.group) { grp = document.createElement('optgroup'); grp.label = o.group; sel.appendChild(grp); }
+      const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; grp.appendChild(op);
+    }
     sel.value = cur; sel.onchange = () => { c.voice = sel.value; saveCast(); };
     const play = document.createElement('button'); play.textContent = '▶'; play.title = 'Poslechnout';
     play.onclick = () => { saveSettings(); ensureOutCtx(); shutUp(); tm = { end: performance.now(), silence: 0, test: true };
@@ -654,23 +657,31 @@ async function loadAiVoices(quiet) {
   if (!key) { if (!quiet) $('aiInfo').textContent = 'Nejdřív vlož klíč z AI Studia.'; return; }
   if (!quiet) $('aiInfo').textContent = 'Načítám hlasy…';
   try {
-    let all = [], token = '';
-    for (let page = 0; page < 6; page++) {
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/voices?page_size=1000' + (token ? '&page_token=' + encodeURIComponent(token) : ''),
-        { headers: { 'x-goog-api-key': key } });
-      if (!res.ok) throw new Error('AI Studio ' + res.status + ': ' + (await res.text()).slice(0, 200));
-      const d = await res.json();
-      all = all.concat(d.voices || []);
-      token = d.next_page_token || d.nextPageToken || '';
-      if (!token) break;
-    }
+    // ask only for the voices the user designed or replicated; the big catalogue is not needed
+    const page = async q => {
+      let out = [], token = '';
+      for (let i = 0; i < 6; i++) {
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/voices?page_size=1000' + q + (token ? '&page_token=' + encodeURIComponent(token) : ''),
+          { headers: { 'x-goog-api-key': key } });
+        if (!res.ok) throw Object.assign(new Error('AI Studio ' + res.status + ': ' + (await res.text()).slice(0, 200)), { status: res.status });
+        const d = await res.json();
+        out = out.concat(d.voices || []);
+        token = d.next_page_token || d.nextPageToken || '';
+        if (!token) break;
+      }
+      return out;
+    };
+    let all, filtered = true;
+    try { all = await page('&type=prompted&type=replicated'); }
+    catch (e) { if (e.status !== 400) throw e; filtered = false; all = await page(''); }
+    if (all.length > 150) filtered = false;   // the filter was ignored: fall back to recognising own voices one by one
     aiVoices = all.map(v => {
       const id = v.id || v.name || '';
       const g = lc(v.gender);
       const type = lc(v.type || v.voice_type || v.voiceType);
-      return { id, label: v.display_name || v.displayName || id, mine: /^voice(key)?_/i.test(id) || type === 'prompted' || type === 'replicated',
+      return { id, label: v.display_name || v.displayName || id, mine: filtered || /^voice(key)?_/i.test(id) || type === 'prompted' || type === 'replicated',
         info: [g.startsWith('f') ? 'žena' : g.startsWith('m') ? 'muž' : '', v.pitch || '', v.accent || ''].filter(Boolean).join(', ').slice(0, 40) };
-    }).filter(v => v.id).sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || a.label.localeCompare(b.label));
+    }).filter(v => v.id && v.mine && !AI_VOICES.some(x => x[0] === v.id)).sort((a, b) => a.label.localeCompare(b.label));
     store.set('aiVoices', aiVoices);
     for (const k in aiBadVoices) delete aiBadVoices[k];
     aiVoiceWarned = false;
@@ -678,9 +689,9 @@ async function loadAiVoices(quiet) {
     for (const c of cast) { const hit = aiVoices.find(x => x.id === c.voice) || aiVoices.find(x => lc(x.label) === lc(c.voice)); if (hit) c.voice = hit.id; }
     saveCast(); renderCast();
     const mine = aiVoices.filter(v => v.mine);
-    $('aiInfo').textContent = 'Načteno hlasů: ' + aiVoices.length + '. ' + (mine.length
-      ? 'Tvoje vlastní hlasy (' + mine.length + '): ' + mine.map(v => v.label).join(', ') + '. V seznamu jsou nahoře s hvězdičkou.'
-      : 'Žádný tvůj vlastní hlas mezi nimi není. Hlas navržený v AI Studiu je vidět jen tehdy, když patří ke stejnému projektu jako klíč (Vypravy). Jinak vlož jeho označení (voice_…) tlačítkem </> u role.');
+    $('aiInfo').textContent = (mine.length
+      ? 'Tvoje vlastní hlasy (' + mine.length + '): ' + mine.map(v => v.label).join(', ') + '. Ve výběru u každé role jsou nahoře ve skupině „Tvoje hlasy“.'
+      : 'Žádný tvůj vlastní hlas jsem nenašel. Hlas navržený v AI Studiu je vidět jen tehdy, když patří ke stejnému projektu jako klíč (Vypravy). Jinak vlož jeho označení (voice_…) tlačítkem </> u role.');
   } catch (e) { if (!quiet) $('aiInfo').textContent = 'Hlasy z knihovny se nepodařilo načíst (' + e.message + '). Základních 30 hlasů funguje i tak.'; }
 }
 
@@ -709,7 +720,7 @@ function geminiStream(voice, style, text) {
       res = await call(model, fmt, v);
       if (!res.ok && (res.status === 400 || res.status === 404) && !AI_VOICES.some(x => x[0] === v)) {   // this model does not know the voice
         const why = (await res.text()).slice(0, 160);
-        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst všechny hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
+        if (model === $('aiModel').value && !aiVoiceWarned) { aiVoiceWarned = true; addLine('Chyba', 'Hlas „' + voice + '“ se nepodařilo použít (' + why + '). Zatím mluví ' + AI_FALLBACK_VOICE + '. V Nastavení klikni na „Načíst moje hlasy z AI Studia“; když tam tvůj hlas nebude, vlož jeho označení (voice_…) tlačítkem </> u role.', 'err'); }
         aiBadVoices[model + '|' + v] = true;
         v = AI_FALLBACK_VOICE; res = await call(model, fmt, v);
       }
