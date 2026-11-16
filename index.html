@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. f</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. g</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -1097,7 +1097,9 @@ function dictHeard(raw) {
   if (!words.length) return;
   const has = list => words.some(w => list.includes(w));
   if (words.length <= 9 && has(DICT_REPEAT)) { if (dictGate) dictRepeat(); return; }
-  if (words.length <= 3 && has(DICT_NEXT)) {
+  // "dál", "další", "pokračuj" (even cut short to "pokrač") count anywhere in a short sentence; weaker words only on their own
+  const strong = words.some(w => w === 'dal' || w === 'dale' || w.startsWith('dals') || w.startsWith('pokrac'));
+  if ((strong && words.length <= 8) || (words.length <= 3 && has(DICT_NEXT))) {
     if (!dictGate) { logEv('DIKTÁT', 'ignorováno („dál“ dřív, než řádek dozněl): ' + seg); return; }
     addLine('Stůl', seg, 'player'); logEv('DIKTÁT', 'dál');
     tm = { end: performance.now(), silence: 0 };
