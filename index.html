@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. e</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. f</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -477,7 +477,7 @@ FORMÁT ODPOVĚDI (velmi důležité, vše se čte nahlas):
 - MLUV JAKO ČLOVĚK U STOLU, NE JAKO PŘEDČÍTAČ: krátké věty, jak se říkají nahlas, žádné výčty a souvětí na tři řádky. Klidně hovorově („Jo, to jde.“, „Hm, zkus to.“), ale česky správně. Reaguj na to, co hráč skutečně řekl, ne obecnou frází.
 - NEOPAKUJ SE: popis místa, který už zazněl, znovu neříkej (jen na „zopakuj“). Než odpovíš, podívej se na své poslední odpovědi a nepoužij stejný začátek, stejný konec ani stejnou otázku. 
 - Když v historii uvidíš „…(hráč mě přerušil)“, hráč ti skočil do řeči jako u stolu. K nedořečenému se nevracej, nezačínej znovu od začátku a neomlouvej se, prostě odpověz na to, co řekl. Když zbylá informace byla důležitá (např. číslo potřebné na hod), řekni ji jednou krátkou větou.
-- PŘEDEJ TAH: když domluvíš a na řadě jsou hráči, poslední věta jim to musí dát najevo. Krátce, dvěma třemi slovy, a pokaždé jinak: „Co uděláš?“, „Jsi na tahu.“, „Borymire?“, „Kam půjdeš?“, „Tvůj tah.“, „Co ty na to?“, „A teď ty.“, nebo konkrétně podle situace („Půjdeš k regálu, nebo k sudům?“). Stejnou formulaci nepoužij dvakrát za sebou. Výjimka: když hráč právě dostal pokyn k hodu nebo diktát, výzva už zazněla.
+- PŘEDEJ TAH: když domluvíš a na řadě jsou hráči, poslední věta jim to musí dát najevo. Krátce, dvěma třemi slovy, a pokaždé jinak: „Co uděláš?“, „Jsi na tahu.“, „Borymire?“, „Kam půjdeš?“, „Tvůj tah.“, „Co ty na to?“, „A teď ty.“, nebo konkrétně podle situace („Půjdeš k regálu, nebo k sudům?“). Stejnou formulaci nepoužij dvakrát za sebou a „Co uděláš?“ použij nanejvýš jednou za pět odpovědí. Často stačí popis zakončit konkrétní otázkou podle situace nebo jménem postavy. Po skončeném boji neříkej „Jsi na tahu“. Výjimka: když hráč právě dostal pokyn k hodu nebo diktát, výzva už zazněla.
 - ŽÁDNÉ ZKRATKY PRAVIDEL: hráč nemusí znát herní hantýrku. Neříkej „vyléčí dvě kostky“ ani „zranění jedna kostka, bodný, lehký“. Řekni to celou větou: „Když ho vypiješ, hodíš dvěma kostkami a tolik životů si vyléčíš.“, „Krátký meč: zranění jedna kostka. Je lehký, dá se s ním bodat.“ Nepoužívej slova, která hráči nic neřeknou (bodný, lehký, finesa, záchrana, výhoda), bez vysvětlení.
 - „Zopakuj“ = zopakuj poslední popis. „Stop“ = odpověz jen „Rádce: Čekám.“ „Pokračuj“ = pokračuj, kde jste skončili.
 
@@ -485,7 +485,8 @@ DIKTOVÁNÍ (karta postavy, mapa, odměny, cokoli k zapsání nebo zakreslení) 
 - Nejdřív jedním řádkem „Rádce:“ řekni, co budeš diktovat a z jakých částí se to skládá (u karty postavy použij doslovný úvod ze scénáře; u mapy např. „Nadiktuju ti mapu sklepa.“). Při úplně prvním diktování ve hře zazní věta: „Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.“ Později už ji neopakuj.
 - Pak napiš každý údaj na samostatný řádek, který začíná „Diktát:“. Jeden krátký údaj = jeden řádek. Napiš všechny řádky najednou; aplikace sama po každém řádku počká, až hráč řekne „dál“, a umí řádek zopakovat.
 - Za poslední řádek „Diktát:“ už nic dalšího nepiš. Aplikace ti dá vědět, až bude všechno zapsané, a teprve pak pokračuj.
-- Když ti aplikace napíše, že hráč během diktování promluvil, krátce odpověz a zbylé řádky nadiktuj znovu stejným způsobem.
+- Když ti aplikace napíše, že hráč během diktování promluvil, krátce odpověz a zbylé řádky nadiktuj znovu stejným způsobem. Aplikace diktovaný řádek přečte znovu sama, proto v řádku „Rádce:“ jeho obsah NIKDY neopakuj (žádná čísla ani hodnoty z něj). Chce-li hráč řádek slyšet znovu, stačí „Jasně, ještě jednou.“ Ptá-li se, co něco znamená, vysvětli jen význam vlastními slovy, bez hodnot z řádku.
+- Co je v řádku „Diktát:“, už neříkej také v řádku „Rádce:“ (ne „Rádce: Do stěny dokresli díru. Diktát: Do stěny dokresli díru.“).
 - Když hraje víc hráčů, diktuj karty postupně: nejdřív celou kartu jednoho, v další odpovědi kartu dalšího.
 
 PRAVIDLA KOSTEK (jen šestistěnné kostky):
@@ -1883,11 +1884,15 @@ function transcribeSeg(frames, barge, ratio, spec) {
   sttChain = sttChain.then(() => req).then(text => handleHeard(text, barge, ratio));
 }
 
+let lastHeard = { text: '', t: 0 };
 function handleHeard(raw, barge, ratio) {
   raw = (raw || '').replace(/\s+/g, ' ').trim();
   if (tm.end && !tm.stt) tm.stt = performance.now();
   if (raw) logEv('SLYŠENO', raw + (barge ? '  [do řeči PJ]' : ''));
   if (paused) return;
+  const nr = norm(raw).join(' ');
+  if (nr && nr.split(' ').length >= 2 && Date.now() - lastHeard.t < 4000 && lastHeard.text.endsWith(nr)) { logEv('SLYŠENO', 'vynecháno, už zaznělo'); return; }
+  if (nr) lastHeard = { text: nr, t: Date.now() };
   if (dictMode()) return dictHeard(raw);
   // remove the GM's own words if the mic caught them (only matters while/just after it speaks)
   const nearPJ = barge || pjActive() || Date.now() - lastSpeechEnd < 2000;
@@ -1968,7 +1973,11 @@ async function scribeStt(b64, sr) {
     fd.append('tag_audio_events', 'false'); fd.append('timestamps_granularity', 'none');
     if (!scribeNoTerms) for (const t of terms) fd.append('keyterms', t);
     fd.append('file', blob, fmt === 'other' ? 'rec.wav' : 'rec.pcm');
-    const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: fd });
+    const ac = new AbortController(), to = setTimeout(() => ac.abort(), 4000);   // a slow answer must not freeze the game
+    let r;
+    try { r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: fd, signal: ac.signal }); }
+    catch (e) { throw new Error(ac.signal.aborted ? 'neodpověděl do 4 s' : (e.message || e)); }
+    finally { clearTimeout(to); }
     if (r.ok) { const d = await r.json(); return (d.text || '').replace(/\s+/g, ' ').trim(); }
     const t = await r.text();
     if ((r.status === 400 || r.status === 422) && /keyterm/i.test(t) && !scribeNoTerms) { scribeNoTerms = true; logEv('SLYŠENÍ', 'Scribe nepřijal klíčová slova: ' + t.slice(0, 150)); continue; }
@@ -1980,10 +1989,13 @@ async function scribeStt(b64, sr) {
 let scribeWarned = false;
 function sttService() { return $('sttSvc').value === 'el' && $('elKey').value.trim() ? 'el' : 'google'; }
 async function recognize(b64, sr) {
-  if (sttService() === 'el') {
+  // short answers ("dál", numbers) and anything said during dictation: Google with hints is quicker and surer;
+  // longer sentences: ElevenLabs Scribe, which understands Czech sentences better
+  const secs = b64.length * 0.75 / ((sr || 16000) * 2);
+  if (sttService() === 'el' && !dictMode() && secs >= 1.6) {
     try { return await scribeStt(b64, sr); }
     catch (e) {   // fall back to Google for this utterance, and say so once
-      if (!scribeWarned) { scribeWarned = true; addLine('Chyba', 'Rozpoznávání ElevenLabs selhalo (' + e.message + '). Tentokrát poslouchá Google.', 'err'); }
+      if (!scribeWarned && !/do 4 s/.test(e.message)) { scribeWarned = true; addLine('Chyba', 'Rozpoznávání ElevenLabs selhalo (' + e.message + '). Tentokrát poslouchá Google.', 'err'); }
       logEv('SLYŠENÍ', 'Scribe selhal: ' + e.message);
     }
   }
@@ -1998,8 +2010,12 @@ async function googleStt(b64, sr) {
     if (c.model) config.model = c.model;
     if (c.ctx) { config.speechContexts = [{ phrases: STT_PHRASES, boost: 8 }];
       const rec = gNoRecent ? [] : sttRecentPhrases(); if (rec.length) config.speechContexts.push({ phrases: rec, boost: 6 }); }
-    const r = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=' + encodeURIComponent(key), {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ config, audio: { content: b64 } }) });
+    const ac = new AbortController(), to = setTimeout(() => ac.abort(), 7000);   // never wait for ever: everything after it would wait too
+    let r;
+    try { r = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=' + encodeURIComponent(key), {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ config, audio: { content: b64 } }), signal: ac.signal }); }
+    catch (e) { throw new Error(ac.signal.aborted ? 'Google neodpověděl do 7 s' : 'Google rozpoznávání: ' + (e.message || e)); }
+    finally { clearTimeout(to); }
     if (r.ok) {
       const d = await r.json();
       return (d.results || []).map(x => x.alternatives && x.alternatives[0] ? x.alternatives[0].transcript : '').join(' ');
