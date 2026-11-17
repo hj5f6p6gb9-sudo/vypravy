@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. c</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. d</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -572,10 +572,23 @@ async function loadElVoices() {
   if (!key) { alert('Nejdřív vlož ElevenLabs API klíč.'); return; }
   $('elInfo').textContent = 'Načítám hlasy…';
   try {
-    const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
-    if (res.status === 401) throw new Error('ElevenLabs tenhle klíč nezná. Na elevenlabs.io v nastavení účtu (API Keys) vytvoř nový klíč, celý ho zkopíruj, vlož sem místo starého a klikni znovu.');
-    if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
-    const data = await res.json();
+    // the current voice list comes in pages; the old list (/v1/voices) may miss voices added from the library
+    let list = [], token = '', newApi = true;
+    for (let i = 0; i < 20; i++) {
+      const res = await fetch('https://api.elevenlabs.io/v2/voices?page_size=100' + (token ? '&next_page_token=' + encodeURIComponent(token) : ''), { headers: { 'xi-api-key': key } });
+      if (res.status === 401) throw new Error('ElevenLabs tenhle klíč nezná. Na elevenlabs.io v nastavení účtu (API Keys) vytvoř nový klíč, celý ho zkopíruj, vlož sem místo starého a klikni znovu.');
+      if (!res.ok) { newApi = false; break; }
+      const d = await res.json();
+      list = list.concat(d.voices || []);
+      token = d.next_page_token || '';
+      if (!d.has_more || !token) break;
+    }
+    if (!newApi) {
+      const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
+      if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
+      list = (await res.json()).voices || [];
+    }
+    const data = { voices: list };
     // only the voices the user added or made; ElevenLabs' own default voices (category "premade") are left out
     const own = (data.voices || []).filter(v => v.category !== 'premade');
     elVoices = (own.length ? own : (data.voices || [])).sort((a, b) => a.name.localeCompare(b.name));
@@ -595,7 +608,7 @@ async function loadElVoices() {
         }
       }
     } catch (e) {}
-    $('elInfo').textContent = 'Načteno hlasů: ' + elVoices.length + '.' + models + ' V obsazení níže vyber hlas pro každou roli a tlačítkem ▶ si ho poslechni.';
+    $('elInfo').textContent = 'Načteno hlasů: ' + elVoices.length + ' (' + elVoices.map(v => v.name.split(' - ')[0]).join(', ') + ').' + models + ' V obsazení níže vyber hlas pro každou roli a tlačítkem ▶ si ho poslechni.';
   } catch (e) { $('elInfo').textContent = 'Chyba: ' + e.message; }
 }
 
