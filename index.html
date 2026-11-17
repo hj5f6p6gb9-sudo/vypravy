@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. b</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. c</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -446,6 +446,10 @@ SCÉNÁŘ JE ZÁVAZNÝ (nejdůležitější pravidlo):
 - Vlastními slovy mluv jen tehdy, když hráči řeknou nebo udělají něco, na co scénář doslovný text nemá. I pak se drž faktů ze scénáře a nic si nepřimýšlej: žádné nové postavy, předměty, místnosti, sliby ani odměny. Když scénář odpověď nezná, postava to prostě neví.
 
 ZKOMOLENÁ SLOVA: rozpoznávání řeči často komolí jména a krátká slova (např. „bolí mě“ nebo „bolí Mira“ místo „Borymira“, „pepř“ místo „Pepina“). Když odpověď hráče zní podobně jako jedna z možností, které právě má, ber ji jako tu možnost a pokračuj. Když si opravdu nejsi jistý, zeptej se jednou krátkou větou („Rozuměl jsem Borymir, je to tak?“). Doslovný text, který už zazněl, kvůli nejasné odpovědi NIKDY neopakuj celý.
+- Slovo, které v kontextu nedává smysl, je skoro vždy zkomolené slovo z toho, co jsi právě řekl. Nahraď ho nejbližším podobně znějícím slovem ze své poslední odpovědi („zákazník“ = „zákeřný útok“, „pull“ nebo „půlka“ = „půlčík“, „za kolik“ = „jednou za kolo“) a odpověz na smysl.
+- Zkomolené slovo hráči NIKDY neopakuj zpátky („zeptal ses na zákazníka?“) a neodbývej ho („to teď neřešíme“). Hráč to tak neřekl.
+- Otázka během diktování se skoro vždy týká právě diktovaného řádku. Vysvětli ho jednou dvěma krátkými větami a pak pokračuj.
+- Neúplná odpověď („tak já si zahraju“, „hm“, „počkej“): nic znovu nevyjmenovávej, polož jen krátkou otázku („Za koho?“) nebo počkej. Výčet možností řekni znovu jen tehdy, když o něj hráč požádá.
 
 RÁDCE JE VĚCNÝ: Rádce nevtipkuje, nekomentuje, co hráč řekl, a nepřidává poznámky ani pozdravy navíc. Řekne jen to, co je potřeba k dalšímu kroku. Rozpoznávání řeči občas zkomolí slova (třeba „v postavě“ na „v posteli“); divná nebo nesouvisející slova v řeči hráče tiše přejdi a nereaguj na ně. Vtip a barvitost patří jen postavám a Vypravěči, a i tam jen podle scénáře.
 
@@ -1897,7 +1901,25 @@ function pcm16b64(frames) {
 const STT_PHRASES = ['mám', 'dík', 'díky', 'děkuju', 'jasně', 'jo', 'ne', 'jedna', 'dva', 'tři', 'čtyři', 'pět', 'šest', 'sedm', 'osm', 'devět', 'deset', 'jedenáct', 'dvanáct', 'třináct', 'čtrnáct', 'patnáct', 'šestnáct', 'sedmnáct', 'osmnáct', 'padlo', 'Borymira', 'vezmu si Borymira', 'za Borymira', 'Pepina', 'za Pepina', 'Bratra Ondřeje', 'Ondřeje', 'Liannu', 'za Liannu', 'trpaslíka', 'půlčíka', 'klerika', 'kouzelnici', 'elfku', 'dál', 'další', 'další řádek', 'Rádce', 'Pane jeskyně', 'Vypravěči', 'zopakuj', 'pokračuj', 'počkej', 'Matouš', 'Hrudomír', 'Borymir', 'Pepin', 'Lianna',
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
-  'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování'];
+  'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování',
+  'zákeřný útok', 'Šťastlivec', 'plížení', 'Plížení', 'zručnost', 'Zručnost', 'dovednosti', 'zvláštní schopnosti', 'jednou za kolo', 'výhoda', 'výhodu',
+  'krátký luk', 'zlodějské náčiní', 'provaz', 'zásoby', 'životy', 'obrana', 'vyberu si', 'zahraju si za', 'hraju za', 'ještě jednou', 'co to znamená',
+  'zopakuj ten řádek', 'půlčík tulák', 'trpaslík bojovník', 'lidský klerik', 'elfí kouzelnice', 'válečná sekera', 'ohnivý šíp', 'dostřel', 'zranění', 'kostka'];
+// Words the Pán jeskyně has just said: a player who answers or asks back almost always uses them
+function sttRecentPhrases() {
+  const out = new Set();
+  for (const t of pjRecent.slice(-2)) {
+    const clean = t.replace(/(^|\n)\s*[^:\n]{1,40}:\s*/g, ' ').replace(/\b(Diktát|Rádce|Vypravěč)\b/g, ' ');
+    for (const seg of clean.split(/[.,:;?!„“"()\n–-]+/)) {
+      const w = seg.trim().split(/\s+/).filter(Boolean);
+      for (let i = 0; i < w.length; i++) {
+        if (w[i].length >= 4) out.add(w[i]);
+        if (i + 1 < w.length) out.add(w[i] + ' ' + w[i + 1]);
+      }
+    }
+  }
+  return [...out].filter(p => p.length <= 100).slice(0, 400);
+}
 const STT_CONFIGS = [{ model: 'latest_short', ctx: true }, { model: 'default', ctx: true }, { model: null, ctx: false }];
 let sttCfg = store.get('sttCfg', 0);
 async function googleStt(b64, sr) {
@@ -1907,7 +1929,8 @@ async function googleStt(b64, sr) {
     const c = STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)];
     const config = { encoding: 'LINEAR16', sampleRateHertz: sr, languageCode: 'cs-CZ', enableAutomaticPunctuation: true };
     if (c.model) config.model = c.model;
-    if (c.ctx) config.speechContexts = [{ phrases: STT_PHRASES, boost: 8 }];
+    if (c.ctx) { config.speechContexts = [{ phrases: STT_PHRASES, boost: 8 }];
+      const rec = sttRecentPhrases(); if (rec.length) config.speechContexts.push({ phrases: rec, boost: 6 }); }
     const r = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=' + encodeURIComponent(key), {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ config, audio: { content: b64 } }) });
     if (r.ok) {
