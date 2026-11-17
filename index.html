@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. d</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. e</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -166,6 +166,11 @@
       <input id="mapPause" type="range" min="0" max="6" step="0.5">
       <label>Rychlost řeči: <span id="rateVal"></span></label>
       <input id="rate" type="range" min="0.7" max="1.3" step="0.05">
+      <label>Kdo převádí řeč hráčů na text</label>
+      <select id="sttSvc">
+        <option value="el">ElevenLabs Scribe – nejpřesnější čeština (platí se z předplatného ElevenLabs)</option>
+        <option value="google">Google Cloud</option>
+      </select>
       <label>Rozpoznávání řeči</label>
       <select id="stt">
         <option value="google">Google – mikrofon pořád zapnutý (doporučeno)</option>
@@ -1842,7 +1847,7 @@ function onMicFrame(d) {
   if (lv > thr * 0.65) { mic.voicedMs += fm; mic.belowMs = 0; mic.spec = null; } else mic.belowMs += fm;
   // after a short silence start recognising already; if the player goes on talking, the result is thrown away
   if (!mic.spec && !mic.forced && mic.belowMs >= 250 && mic.voicedMs >= 300) {
-    const req = googleStt(pcm16b64(mic.frames), mic.ctx.sampleRate); req.catch(() => {});
+    const req = recognize(pcm16b64(mic.frames), mic.ctx.sampleRate); req.catch(() => {});
     mic.spec = { voiced: mic.voicedMs, req };
   }
   if (mic.barge && !dictMode()) {   // while dictating, muttering must not stop the GM
@@ -1873,7 +1878,7 @@ function endSeg(pushToTalk) {
 
 let sttChain = Promise.resolve();
 function transcribeSeg(frames, barge, ratio, spec) {
-  const req = (spec || googleStt(pcm16b64(frames), mic.ctx.sampleRate)).catch(e => { sttFailed(e); return ''; });
+  const req = (spec || recognize(pcm16b64(frames), mic.ctx.sampleRate)).catch(e => { sttFailed(e); return ''; });
   // results are handled strictly in the order people spoke
   sttChain = sttChain.then(() => req).then(text => handleHeard(text, barge, ratio));
 }
@@ -1934,7 +1939,56 @@ function sttRecentPhrases() {
   return [...out].filter(p => p.length <= 100).slice(0, 400);
 }
 const STT_CONFIGS = [{ model: 'latest_short', ctx: true }, { model: 'default', ctx: true }, { model: null, ctx: false }];
-let sttCfg = store.get('sttCfg', 0);
+let sttCfg = store.get('sttCfg', 0), gNoRecent = false;
+if (store.get('sttCfgReset', 0) < 1) { store.set('sttCfgReset', 1); sttCfg = 0; store.set('sttCfg', 0); }   // start again with the hint list on
+// Key words for ElevenLabs Scribe: more than 100 terms makes every request billed as 20 seconds, so keep under it
+const SCRIBE_TERMS = ['Borymir', 'Borymira', 'Pepin', 'Pepina', 'Bratr Ondřej', 'Bratra Ondřeje', 'Lianna', 'Liannu', 'Matouš', 'Hrudomír',
+  'půlčík', 'půlčíka', 'trpaslík', 'trpaslíka', 'klerik', 'klerika', 'kouzelnice', 'kouzelnici', 'bojovník', 'tulák', 'elfí kouzelnice',
+  'zákeřný útok', 'Šťastlivec', 'plížení', 'zručnost', 'vnímání', 'jednou za kolo', 'zlodějské náčiní', 'krátký luk', 'krátký meč',
+  'válečná sekera', 'palcát', 'magická střela', 'ohnivý šíp', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'kostlivec', 'sarkofág',
+  'pečetní prsten', 'Pane jeskyně', 'Rádce', 'Vypravěči', 'zopakuj', 'pokračuj', 'dál', 'Zlatý korbel'];
+let scribeModel = 'scribe_v2', scribeNoTerms = false;
+async function scribeStt(b64, sr) {
+  const key = $('elKey').value.trim();
+  if (!key) throw new Error('chybí klíč ElevenLabs');
+  const bin = atob(b64), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  let blob, fmt = 'other';
+  if (sr === 16000) { blob = new Blob([bytes], { type: 'application/octet-stream' }); fmt = 'pcm_s16le_16'; }
+  else {   // wrap the raw sound in a WAV header
+    const h = new DataView(new ArrayBuffer(44)), w = (o, t) => { for (let i = 0; i < t.length; i++) h.setUint8(o + i, t.charCodeAt(i)); };
+    w(0, 'RIFF'); h.setUint32(4, 36 + bytes.length, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true);
+    h.setUint32(24, sr, true); h.setUint32(28, sr * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true); w(36, 'data'); h.setUint32(40, bytes.length, true);
+    blob = new Blob([h.buffer, bytes], { type: 'audio/wav' });
+  }
+  const terms = [...new Set(SCRIBE_TERMS.concat(sttRecentPhrases().filter(p => p.split(' ').length > 1 || p.length >= 6)))]
+    .filter(t => t.length <= 50 && !/[<>{}\[\]\\]/.test(t)).slice(0, 99);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const fd = new FormData();
+    fd.append('model_id', scribeModel); fd.append('language_code', 'cs'); fd.append('file_format', fmt);
+    fd.append('tag_audio_events', 'false'); fd.append('timestamps_granularity', 'none');
+    if (!scribeNoTerms) for (const t of terms) fd.append('keyterms', t);
+    fd.append('file', blob, fmt === 'other' ? 'rec.wav' : 'rec.pcm');
+    const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: fd });
+    if (r.ok) { const d = await r.json(); return (d.text || '').replace(/\s+/g, ' ').trim(); }
+    const t = await r.text();
+    if ((r.status === 400 || r.status === 422) && /keyterm/i.test(t) && !scribeNoTerms) { scribeNoTerms = true; logEv('SLYŠENÍ', 'Scribe nepřijal klíčová slova: ' + t.slice(0, 150)); continue; }
+    if ((r.status === 400 || r.status === 422 || r.status === 404) && scribeModel !== 'scribe_v1' && /model/i.test(t)) { scribeModel = 'scribe_v1'; continue; }
+    throw new Error('ElevenLabs rozpoznávání ' + r.status + ': ' + t.slice(0, 200));
+  }
+  throw new Error('ElevenLabs rozpoznávání nevyšlo');
+}
+let scribeWarned = false;
+function sttService() { return $('sttSvc').value === 'el' && $('elKey').value.trim() ? 'el' : 'google'; }
+async function recognize(b64, sr) {
+  if (sttService() === 'el') {
+    try { return await scribeStt(b64, sr); }
+    catch (e) {   // fall back to Google for this utterance, and say so once
+      if (!scribeWarned) { scribeWarned = true; addLine('Chyba', 'Rozpoznávání ElevenLabs selhalo (' + e.message + '). Tentokrát poslouchá Google.', 'err'); }
+      logEv('SLYŠENÍ', 'Scribe selhal: ' + e.message);
+    }
+  }
+  return googleStt(b64, sr);
+}
 async function googleStt(b64, sr) {
   const key = $('gKey').value.trim();
   if (!key) { const e = new Error('chybí Google API klíč (AIza…) v Nastavení'); e.fatal = true; throw e; }
@@ -1943,7 +1997,7 @@ async function googleStt(b64, sr) {
     const config = { encoding: 'LINEAR16', sampleRateHertz: sr, languageCode: 'cs-CZ', enableAutomaticPunctuation: true };
     if (c.model) config.model = c.model;
     if (c.ctx) { config.speechContexts = [{ phrases: STT_PHRASES, boost: 8 }];
-      const rec = sttRecentPhrases(); if (rec.length) config.speechContexts.push({ phrases: rec, boost: 6 }); }
+      const rec = gNoRecent ? [] : sttRecentPhrases(); if (rec.length) config.speechContexts.push({ phrases: rec, boost: 6 }); }
     const r = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=' + encodeURIComponent(key), {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ config, audio: { content: b64 } }) });
     if (r.ok) {
@@ -1951,6 +2005,7 @@ async function googleStt(b64, sr) {
       return (d.results || []).map(x => x.alternatives && x.alternatives[0] ? x.alternatives[0].transcript : '').join(' ');
     }
     const t = await r.text();
+    if (r.status === 400 && c.ctx && !gNoRecent) { gNoRecent = true; logEv('SLYŠENÍ', 'Google nepřijal nápovědu z poslední řeči PJ: ' + t.slice(0, 150)); continue; }
     if (r.status === 400 && sttCfg < STT_CONFIGS.length - 1) { sttCfg++; store.set('sttCfg', sttCfg); continue; } // try a simpler setup
     const e = new Error('Google rozpoznávání ' + r.status + ': ' + t.slice(0, 220)); e.fatal = r.status === 400 || r.status === 401 || r.status === 403; throw e;
   }
@@ -2037,6 +2092,8 @@ function engineChanged() {   // voices come only from ElevenLabs; the other ways
   $('elBox').style.display = 'block'; $('gBox').style.display = 'none';
   if (typeof renderCast === 'function') renderCast(); populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
+$('sttSvc').value = store.get('sttSvc', 'el');
+$('sttSvc').onchange = () => { store.set('sttSvc', $('sttSvc').value); scribeWarned = false; };
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
 $('endSilence').value = store.get('endSilence', 0.6);
 $('micSens').value = store.get('micSens', 1);
@@ -2095,7 +2152,7 @@ $('pauseBtn').onclick = () => {
 };
 $('copyLog').onclick = async () => {
   const head = ['Záznam hry – Dobrodružné výpravy za poklady, ' + new Date().toLocaleString('cs-CZ'),
-    'Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s',
+    'Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s · slyšení: ' + (sttService() === 'el' ? 'ElevenLabs ' + scribeModel + (scribeNoTerms ? ' bez klíčových slov' : '') : 'Google ' + ((STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)] || {}).model || 'výchozí') + (STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)].ctx ? ' s nápovědou' : ' BEZ nápovědy')),
     'Obsazení: ' + cast.map(c => c.role + ' = ' + (engine() === 'el' ? (elVoices.find(v => v.voice_id === elVoiceFor(c)) || {}).name || '?' : c.voice)).join(', ') + (engine() === 'el' ? ' · model ElevenLabs: ' + $('elModel').value : ''), ''];
   const text = head.concat(gameLog).join('\n');
   let ok = false;
