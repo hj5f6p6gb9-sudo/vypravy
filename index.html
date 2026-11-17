@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. f</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. g</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -67,7 +67,8 @@
   <div id="status">Začni novou hru, nebo pokračuj v uložené.</div>
   <div id="meter" title="Hladina mikrofonu"><div id="meterFill"></div></div>
   <div id="timing"></div>
-  <div id="startBar" style="display:flex;gap:14px;justify-content:center;padding:6px 20px 14px;">
+  <div id="startBar" style="display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap;padding:6px 20px 14px;">
+    <select id="advPick" title="Které dobrodružství chcete hrát" style="font-size:20px;padding:14px 16px;border-radius:12px;background:#24242b;color:#f2efe6;border:1px solid #3a3a44;"></select>
     <button class="primary" id="startNew" style="font-size:22px;padding:16px 28px;border:none;border-radius:12px;cursor:pointer;">Nová hra</button>
     <button class="secondary" id="startResume" style="font-size:22px;padding:16px 28px;border:none;border-radius:12px;cursor:pointer;">Pokračovat v uložené hře</button>
   </div>
@@ -191,6 +192,8 @@
     <div class="row">
       <button class="secondary" id="testVoice">Vyzkoušet hlasy</button>
     </div>
+    <label>Dobrodružství pro novou hru</label>
+    <select id="advPick2"></select>
     <div class="row">
       <button class="primary" id="newGame">Nová hra</button>
       <button class="secondary" id="resumeGame">Pokračovat v uložené hře</button>
@@ -439,6 +442,302 @@ Karta: Lianna, elfka kouzelnice
 - Odměna od Matouše: tolik zlatých, kolik jste si domluvili.
 - Tři sta zkušeností. Tím postupuješ na druhou úroveň. Co to znamená pro tvoji kartu, si řekneme na začátku příští výpravy.
 </script>
+<script type="text/plain" id="adventure2"># První oběť
+
+Dobrodružství · 1–4 hráči · postavy 1. úrovně · cca 1–1,5 hodiny
+Podle „The First Casualty“ od Jasona Shaffera (One Page Dungeon Contest 2012), licence Creative Commons Attribution-Share Alike 3.0 (creativecommons.org/licenses/by-sa/3.0). Český překlad a úpravy pro tuto hru jsou šířeny pod stejnou licencí.
+
+## Jak číst tento scénář
+
+- [DOSLOVA] = povinný text. Řekni ho přesně tak, jak je napsaný, uvedeným mluvčím, celý a jen jednou.
+- [DIKTÁT] = údaje k zapsání nebo zakreslení. Nadiktuj je přesně a ve stejném pořadí, každý jako samostatný řádek „Diktát:“.
+- [PRO PJ] = podklady jen pro tebe. Hráčům je nečti. Podle nich odpovídáš, když hráči udělají něco, na co doslovný text není.
+
+## 0. Přehled pro Pána jeskyně
+
+[PRO PJ] Zápletka: Do kraje kolem vesnice Bukovina se potají tlačí dvě temné síly, Čarodějná královna z bažin na jihu a Nekromant z věže na severu. Mladík Harlan z Bukoviny slídil pro Královnu. Ottvar, mág ve službách Nekromanta, ho zabil dýkou s pomocí svých fendarků a tělo nechal u lesní cesty psům. Ottvar se skrývá v jeskyních nedaleko cesty.
+
+[PRO PJ] Scény: 1. Lesní cesta (první boj, stopy) · 2. Vchod a potok (první mapa) · 3. Rozcestí · 4. Tůň (kouzelný meč, krabi, nepovinné) · 5. Dolní jeskyně (hladové krysy, řešení jídlem, nepovinné) · 6. Pavučiny (pavouci, řešení ohněm) · 7. Hnízdo (krvesajové, proplížení) · 8. Jáma (šplhání, skrytá chodba) · 9. Doupě fendarků (boj) · 10. Ottvarův úkryt (lest, odhalení) · Zakončení v Bukovině.
+
+[PRO PJ] Základní pravidla vedení
+- Hody: hráč hlásí jen součet kostek, bonus přičteš ty. Nikdy po hráči nechtěj, aby něco přičítal.
+- Hráči házejí všechno, nestvůry nehází nikdy:
+  - Když nestvůra útočí, napadená postava si hodí obranný hod. Řekni hráči rovnou, kolik musí padnout na třech kostkách. Zranění nestvůr je pevné.
+  - Když postava sešle kouzlo, proti kterému se nestvůra brání záchranou, hodí za nestvůru hráč třemi kostkami; ty přičteš záchranný bonus nestvůry.
+- Nápovědy: jen ty, které jsou u scény uvedené, a jen když se hráči zaseknou nebo o ně požádají. Skrytá řešení (páčidlo, prsten) nenapovídat víc, než je uvedeno.
+
+[PRO PJ] Hra trvá asi hodinu až hodinu a půl. Nepovinné scény 4 a 5 nenabízej; hráči na ně narazí, jen když sami půjdou levou odbočkou. Mezi boji dovol krátký odpočinek, když o něj hráči požádají: Borymir obnoví Druhý dech, Ondřej a Lianna jedno silnější kouzlo.
+
+## Scéna 0: Výběr postav
+
+[DOSLOVA] Vypravěč: Vítejte u stolu, dobrodruzi. Připravte si papír, tužku a kostky.
+
+[DOSLOVA] Rádce: Kolik vás dnes hraje a jak se jmenujete?
+
+[PRO PJ] Na odpověď nijak nereaguj, nekomentuj jména ani počet. Rovnou nabídni postavy tímto textem:
+
+[DOSLOVA] Rádce: Na výběr jsou čtyři postavy. Borymir, trpaslík bojovník, vydrží nejvíc ran a bije válečnou sekerou. Pepin, půlčík tulák, je tichý, mrštný a střílí z luku. Bratr Ondřej, lidský klerik, léčí zranění a na kostlivce má palcát. Lianna, elfí kouzelnice, sesílá ohnivé šípy a magické střely. Za koho budete hrát?
+
+[PRO PJ] Postavy se v úvodu netvoří. Hráč si postavu může přejmenovat. Když ohlásí vlastní postavu, kterou tu nemáš, řekni, že vlastní postavy se budou tvořit v aplikaci, a ať si zatím vybere z hotových. Když se jméno postavy podobá jménu Matouš, hostinského přejmenuj. Až mají všichni vybráno, nadiktuj každému hráči jeho kartu a potom začni scénu 1.
+
+[PRO PJ] Před první kartou řekni tento úvod (jméno a postavu doplň podle výběru). U dalších karet řekni jen první větu.
+
+[DOSLOVA] Rádce: Hraješ za trpaslíka bojovníka Borymira. Nadiktuju ti jeho kartu: nejdřív životy a obranu, potom zvláštní schopnosti, dovednosti a nakonec zbraně a vybavení. Budu diktovat po řádcích. Až budeš mít řádek zapsaný, řekni dál.
+
+Karta: Borymir, trpaslík bojovník
+[DIKTÁT]
+- Nahoru si napiš jméno: Borymir, trpaslík bojovník.
+- Životy dvanáct. Tolik zranění vydržíš.
+- Obrana osmnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď zvláštní schopnost. Druhý dech: jednou za odpočinek se v boji nadechneš a vyléčíš si jednu kostku plus tři životy.
+- Další schopnost. Vidění ve tmě: vidíš potmě na dvanáct čtverečků.
+- Teď dovednosti, tedy v čem jsi dobrý. Atletika plus pět. To je šplhání, skákání a přetlačování.
+- Vnímání plus tři. To je všímání si stop a skrytých věcí.
+- Teď zbraně. Válečná sekera: útok plus pět, zranění jedna kostka plus čtyři.
+- A nakonec vybavení: lucerna, provaz a zásoby.
+[PRO PJ] Borymir: Síla +3, Obratnost +0, Odolnost +2, Inteligence +0, Moudrost +1, Charisma −1.
+
+Karta: Pepin, půlčík tulák
+[DIKTÁT]
+- Nahoru si napiš jméno: Pepin, půlčík tulák.
+- Životy devět. Tolik zranění vydržíš.
+- Obrana čtrnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď zvláštní schopnosti. Zákeřný útok: jedna kostka zranění navíc, když máš výhodu nebo vedle cíle stojí tvůj spojenec. Jednou za kolo.
+- Šťastlivec: když ti na kostkách padne pět nebo míň, házíš znovu.
+- Teď dovednosti, tedy v čem jsi dobrý. Plížení plus pět.
+- Zručnost plus pět. To je otvírání zámků a jemná práce rukama.
+- Vnímání plus tři. To je všímání si stop a skrytých věcí.
+- Teď zbraně. Krátký meč: útok plus pět, zranění jedna kostka plus tři.
+- Krátký luk: útok plus pět, zranění jedna kostka plus tři, dostřel šestnáct čtverečků.
+- A nakonec vybavení: zlodějské náčiní, provaz a zásoby.
+[PRO PJ] Pepin: Síla −1, Obratnost +3, Odolnost +1, Inteligence +1, Moudrost +1, Charisma +1.
+
+Karta: Bratr Ondřej, člověk klerik
+[DIKTÁT]
+- Nahoru si napiš jméno: Bratr Ondřej, lidský klerik.
+- Životy deset. Tolik zranění vydržíš.
+- Obrana sedmnáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď kouzla. Posvátný plamen: můžeš ho seslat kdykoli. Za nestvůru hodíš kostkami, a když neuspěje, dostane jednu kostku plus jedna zranění.
+- Silnější kouzla máš dvě do odpočinku. Vybíráš ze dvou.
+- Léčivé slovo: na dálku vyléčí jednu kostku plus dva životy.
+- Léčení ran: dotykem vyléčí jednu kostku plus čtyři životy.
+- Teď dovednosti, tedy v čem jsi dobrý. Medicína plus pět. To je ošetřování zraněných.
+- Náboženství plus dva. To jsou znalosti o bozích a nemrtvých.
+- Teď zbraně. Palcát: útok plus tři, zranění jedna kostka plus jedna. Kostlivcům dvojnásob.
+- A nakonec vybavení: svatý symbol, lucerna a zásoby.
+[PRO PJ] Bratr Ondřej: Síla +1, Obratnost +0, Odolnost +1, Inteligence +0, Moudrost +3, Charisma +1. Posvátný plamen: cílové číslo 13, záchrana Obratnosti nestvůry.
+
+Karta: Lianna, elfka kouzelnice
+[DIKTÁT]
+- Nahoru si napiš jméno: Lianna, elfí kouzelnice.
+- Životy sedm. Tolik zranění vydržíš.
+- Obrana dvanáct. Čím je vyšší, tím hůř tě nepřítel zasáhne.
+- Teď kouzla. Ohnivý šíp: můžeš ho seslat kdykoli. Útok plus pět, zranění jedna kostka plus dva, dostřel dvacet čtyři čtverečků.
+- Silnější kouzla máš dvě do odpočinku. Vybíráš ze dvou.
+- Magická střela: tři střely, každá vždy zasáhne za jednu kostku.
+- Štít: když se ti nepovede obranný hod, přičteš si plus pět do konce kola.
+- Další schopnost. Vidění ve tmě: vidíš potmě na dvanáct čtverečků.
+- Teď dovednosti, tedy v čem jsi dobrá. Arkána plus pět. To jsou znalosti o magii.
+- Historie plus pět. To jsou znalosti o starých časech a národech.
+- A nakonec vybavení: kniha kouzel, hůl a zásoby.
+[PRO PJ] Lianna: Síla −1, Obratnost +2, Odolnost +1, Inteligence +3, Moudrost +1, Charisma +0.
+
+## Scéna 1: Lesní cesta
+
+[PRO PJ] Mapu tu nediktuj, je to jen cesta lesem. Psi (počet podle družiny) žerou u cesty tělo mladíka Harlana. Bojují jen ti z tabulky, ostatní se drží v křoví a utečou, jakmile první pes padne. Psi utečou i tehdy, když přijdou o polovinu životů.
+
+[DOSLOVA] Vypravěč: Lesní cesta do vesnice Bukovina je úzká a lidé po ní chodí neradi. Slunce už zapadá a mezi stromy se plíží mlha. Kousek před vámi se ozve vrčení a mlaskání. U cesty leží člověk a nad ním se sklánějí vychrtlí psi. Jsou šediví, žebra jim vystupují a oči svítí jako uhlíky. Jeden z nich zvedne hlavu a vycení zuby.
+
+[PRO PJ] Když hráči zaútočí nebo se přiblíží, psi se na ně vrhnou. Když hráči couvnou, psi vrčí, ale nepronásledují je; tělo nechtějí opustit. Rádce při prvním boji stručně vysvětlí iniciativu (tři kostky, přičteš Obratnost), útok, zranění a obranný hod, stejně jako v první výpravě, ale kratší.
+
+[PRO PJ] Kletba psů: životy ztracené kousnutím vychrtlého psa nejde vrátit kouzlem ani lektvarem, vrátí se až po noci odpočinku. Řekni to hráči, až poprvé zkusí takovou ránu léčit: „Rána od psího kousnutí se nechce zavřít. Kouzlo na ni nepůsobí.“
+
+[DOSLOVA] (po boji, když hráči prohlédnou tělo) Vypravěč: Je to mladík, skoro ještě kluk. Psi mu rozervali kabátec, ale smrtelná rána je jiná: úzký bodný řez pod žebry. Tohle neudělaly zuby. Tohle udělal nůž. V blátě vedle těla jsou čerstvé stopy bot a vedle nich otisky něčeho bosého, s dlouhými drápy. Vedou pryč z cesty, do lesa, směrem ke skalám.
+
+[PRO PJ] Co se dá zjistit: Vnímání proti 10: stopy jsou z dnešního odpoledne, vedou ke skalnímu srázu asi sto kroků od cesty. Vnímání proti 13: v kapse kabátce je dřevěná píšťalka s vyřezaným jménem Harlan. Kdo je Harlan, hráči zjistí až v Bukovině nebo od Ottvara. Hráče k jeskyni netlač; když se rozhodnou jít nejdřív do vesnice, Vypravěč řekne, že vesnice je ještě hodinu cesty a stopy do rána smyje déšť.
+
+## Scéna 2: Vchod a potok
+
+[PRO PJ] Mapa: vchod dva čtverečky široký dole uprostřed papíru; chodba dva čtverečky nahoru do jeskyně s potokem (čtyři na šířku, tři na výšku); potok teče prostřední řadou zleva doprava; z horní stěny uprostřed vede chodba dál nahoru.
+
+[DOSLOVA] Vypravěč: Stopy vás dovedou ke skalní stěně. Hustý smrkový porost a velký balvan téměř zakrývají černý otvor jeskyně. Zevnitř je cítit vlhko a hnijící listí. Uvnitř je tma jako v pytli.
+
+[PRO PJ] Světlo: Borymir a Bratr Ondřej mají lucernu, v zásobách každé postavy je pochodeň a křesadlo. Borymir a Lianna vidí ve tmě na šest čtverečků, Pepin a Ondřej ne. Mapu diktuj, až hráči vejdou.
+
+[DIKTÁT]
+- Teď začne nová mapa na novém papíře. Vchod do jeskyně nakresli dole uprostřed papíru, dva čtverečky široký.
+- Od vchodu vede chodba dva čtverečky nahoru do jeskyně. Ta má čtyři čtverečky na šířku a tři na výšku.
+- Prostřední řadou jeskyně teče zleva doprava potok.
+- Z horní stěny jeskyně, uprostřed, vede chodba dál nahoru.
+
+[DOSLOVA] Vypravěč: Napříč jeskyní teče mělký studený potok. Voda šplouchá přes kameny. V kalužích na druhém břehu jsou otisky bot i drápů. Vedou dál, do chodby nahoru.
+
+[PRO PJ] Potok je mělký, přejít jde bez hodu.
+
+## Scéna 3: Rozcestí
+
+[PRO PJ] Mapa: chodba z jeskyně s potokem vede tři čtverečky nahoru a rozdělí se doleva a doprava. Stopy mizí v pravé odbočce. Levá vede k tůni a do dolní jeskyně, pravá k pavučinám, hnízdu, jámě a dál k Ottvarovi.
+
+[DIKTÁT]
+- Chodba vede tři čtverečky nahoru a pak se rozdělí. Jedna odbočka vede doleva, druhá doprava.
+
+[DOSLOVA] Vypravěč: Chodba se rozdvojuje. Zleva je slyšet tiché kapání vody a z té strany táhne chlad. Zprava nic, jen ticho a tma. Stopy na prašné zemi zahýbají doprava.
+
+## Scéna 4: Tůň (levá odbočka)
+
+[PRO PJ] Mapa: levá odbočka vede čtyři čtverečky doleva do jeskyně čtyři na čtyři; tůň zabírá prostřední čtyři čtverečky; z dolní stěny jeskyně vede úzká chodba dva čtverečky dolů do dolní jeskyně.
+
+[DIKTÁT]
+- Levá odbočka vede čtyři čtverečky doleva do jeskyně. Ta má čtyři čtverečky na šířku a čtyři na výšku.
+- Prostřední čtyři čtverečky jeskyně zabírá hluboká tůň.
+- Z dolní stěny jeskyně vede úzká chodba dva čtverečky dolů.
+
+[DOSLOVA] Vypravěč: Uprostřed jeskyně je tůň, černá a hladká jako zrcadlo. Ze stropu do ní kape voda. A hluboko pod hladinou se něco slabě modře třpytí.
+
+[PRO PJ] Na dně leží kostra dávného dobrodruha a v ruce drží kouzelný dlouhý meč, který slabě svítí. Tůň hlídají obří krabi (počet podle družiny). Vylezou, jakmile někdo vstoupí do vody nebo strčí ruku či tyč pod hladinu. Kdo jen stojí u kraje, tomu nic nehrozí. Vnímání proti 12: mezi kameny na dně se něco pohnulo, jako by tam byly velké klepeta.
+[PRO PJ] Potopit se pro meč: hod na Atletiku proti 10. Při neúspěchu se postava nedostane ke dnu a musí to zkusit znovu v dalším kole. Krabi bojují, dokud je někdo ve vodě; kdo vyleze z vody, toho nepronásledují. Když krab přijde o polovinu životů, zaleze pod kámen.
+
+[DOSLOVA] (když hráč vytáhne meč) Vypravěč: Prsty sevřou chladnou rukojeť. Kostra meč pustí, jako by na to čekala. Nad hladinou čepel zazáří tlumeným modrým světlem, jako svíčka za mléčným sklem.
+
+[DIKTÁT]
+- (jen když si meč hráč vezme) Kouzelný dlouhý meč. Rádce sem doplní konkrétní čísla pro tvou postavu: útok o jedna víc než tvá zbraň na blízko, zranění jedna kostka plus o jedna víc. Meč slabě svítí na dva čtverečky.
+
+[PRO PJ] Čísla pro meč: Borymir útok plus šest, zranění jedna kostka plus pět; Pepin útok plus šest, zranění jedna kostka plus čtyři; Bratr Ondřej útok plus čtyři, zranění jedna kostka plus dva; Lianna útok plus dva, zranění jedna kostka. Nadiktuj jen ta čísla, která patří postavě, která meč vzala.
+
+## Scéna 5: Dolní jeskyně
+
+[PRO PJ] Mapa: z dolní stěny jeskyně s tůní vede chodba dva čtverečky dolů do jeskyně tři na tři. Je to slepá jeskyně.
+
+[DIKTÁT]
+- Chodba vede do malé jeskyně, tři čtverečky na šířku a tři na výšku. Jiný východ nemá.
+
+[DOSLOVA] Vypravěč: Malá jeskyně páchne zvířetem. Po zemi se válí roztrhaný prázdný pytel a ohryzané kosti. Z temného kouta se ozve hladové pištění a zablýsknou se oči. Vyhublé krysy velké jako psi se k vám plíží a cení zuby.
+
+[PRO PJ] Obří krysy (počet podle družiny) jsou vyhladovělé, protože jim fendarci sebrali všechno, co nastřádaly. Řešení bez boje: když jim někdo hodí jídlo ze zásob, krysy se na ně vrhnou a o družinu přestanou mít zájem. Nenapovídej to přímo; nápověda jen na dotaz nebo když hráči zaváhají: „Jsou strašně vyhublé. Ta jedna hryže prázdný pytel.“ Když dojde na boj, krysa s dvěma životy uteče do kouta.
+
+## Scéna 6: Pavučiny (pravá odbočka)
+
+[PRO PJ] Mapa: pravá odbočka vede tři čtverečky doprava; poslední dva čtverečky chodby jsou zatažené pavučinami; za nimi jeskyně čtyři na čtyři; z její horní stěny uprostřed vede chodba dál nahoru.
+
+[DIKTÁT]
+- Pravá odbočka vede tři čtverečky doprava. Poslední dva čtverečky chodby jsou zatažené hustými pavučinami.
+- Za pavučinami je jeskyně, čtyři čtverečky na šířku a čtyři na výšku.
+- Z horní stěny jeskyně, uprostřed, vede chodba dál nahoru.
+
+[DOSLOVA] Vypravěč: Chodbu přehrazuje bílá stěna pavučin, hustá jako plátno. Visí v ní suché listí, chlupy a malá vysušená zvířátka. Stopy bot vedou přímo k ní a v pavučině je pár roztrhaných děr, jako by tudy někdo nedávno prošel.
+
+[PRO PJ] Za pavučinou a nad ní sedí obří vlčí pavouci (počet podle družiny). Když někdo pavučinu trhá, sekne do ní nebo jí prolézá, pavouci zaútočí: jeden z nich spustí se ze stropu za záda družiny, ostatní vyrazí zepředu. Vnímání proti 13 předem: nahoře ve tmě se něco pohnulo, osm očí odráží světlo.
+[PRO PJ] Řešení ohněm: pochodeň nebo ohnivé kouzlo zapálí pavučinu. Shoří za jedno kolo, každý pavouk v ní utrpí tři zranění a pavouci utečou hlouběji do skal. Kdo stojí v hořící pavučině, utrpí také tři zranění. Nenapovídej to přímo; nápověda jen na dotaz: „Pavučina je suchá jako troud.“
+[PRO PJ] Jed: kdo dostane zásah kousnutím, hodí si záchranu Odolnosti proti 11. Při neúspěchu utrpí ještě tři zranění navíc.
+
+## Scéna 7: Hnízdo
+
+[PRO PJ] Mapa: z horní stěny jeskyně s pavučinami vede chodba dva čtverečky nahoru do vysoké jeskyně pět na tři; z její pravé stěny, prostřední řada, vede chodba dva čtverečky doprava k jámě.
+
+[DIKTÁT]
+- Chodba vede dva čtverečky nahoru do vysoké jeskyně. Ta má pět čtverečků na šířku a tři na výšku.
+- Z pravé stěny jeskyně, z prostřední řady, vede chodba dva čtverečky doprava.
+
+[DOSLOVA] Vypravěč: Tahle jeskyně je vysoká, strop se ztrácí ve tmě. Zem je pokrytá páchnoucím trusem. Shora je slyšet tiché šustění, jako když spí netopýři. Ale tohle nejsou netopýři. Jsou větší a místo zobáku mají dlouhé tenké sosáky.
+
+[PRO PJ] U stropu spí krvesajové (počet bdících podle družiny). Spí, dokud je nevzbudí hluk: boj, křik, pád věci, hlasité mluvení. Proplížit se: každá postava hodí na Plížení proti 10; když aspoň polovina družiny uspěje, krvesajové spí dál. Když hráči zapálili pavučiny a bojovali těsně předtím, krvesajové už jsou vzhůru.
+[PRO PJ] Krvesaj: když zasáhne, přisaje se a na začátku každého svého tahu sání dalších pět zranění, dokud ho někdo nezabije nebo neodtrhne (akce, Atletika proti 10). Po vysátí patnácti životů se odpojí a odletí.
+
+## Scéna 8: Jáma
+
+[PRO PJ] Mapa: chodba z hnízda končí u jámy dva na dva čtverečky. Jáma je hluboká asi čtyři čtverečky (dvacet stop). Ve stěně jsou úchyty a podél levé strany vede úzká římsa. Na dně jámy je v pravé stěně skrytá nízká plazivá chodba, tři čtverečky doprava do doupěte.
+
+[DIKTÁT]
+- Chodba končí u jámy. Jáma má dva čtverečky na šířku a dva na výšku. Nakresli ji jako čtverec s křížkem.
+
+[DOSLOVA] Vypravěč: Chodba náhle končí. Před vámi zeje jáma, hluboká jako dvě patra domu. Ve skále jsou vysekané úchyty a podél jedné stěny vede úzká římsa. Zdola stoupá studený vzduch a s ním sladký nasládlý pach, jako když se v létě kazí maso.
+
+[PRO PJ] Slézt dolů: s provazem bez hodu. Bez provazu hod na Atletiku proti 10; při neúspěchu postava spadne a utrpí tři zranění. Římsa jen vypadá jako cesta, nikam nevede.
+[PRO PJ] Skrytá chodba: dole hod na Vnímání proti 12 (shora proti 15): v pravé stěně dna je za kamenem nízký otvor, kudy jde prolézt jen po čtyřech. Odtud je cítit ten pach. Nápověda, když se hráči dole zaseknou: „Ten pach je nejsilnější u pravé stěny.“
+
+[DIKTÁT]
+- (až hráči skrytou chodbu najdou) Ze dna jámy vede v pravé stěně nízká plazivá chodba, tři čtverečky doprava.
+
+## Scéna 9: Doupě fendarků
+
+[PRO PJ] Mapa: plazivá chodba ústí do jeskyně tři na tři; z její horní stěny vedou dva vysekané schody nahoru do Ottvarova úkrytu (tři na tři).
+
+[DOSLOVA] Vypravěč: Plazivá chodba ústí do nízké jeskyně. Pach je tu k nevydržení. Na zemi se válí kosti a v jejich hromadě klečí postava, hubená, šedá, s dlouhými drápy. Hlodá kost a mlaská. Pak ztuhne, zvedne hlavu a čenichá. Oči má bílé jako mléko.
+
+[PRO PJ] Fendarci (počet podle družiny) jsou divocí nemrtví, silnější a hloupější než ghúlové. Sami nemluví, jen vrčí. Bojují do konce. Kdo vyleze z plazivé chodby, nemá v prvním kole místo na obranu: na první obranný hod má nevýhodu.
+
+[DIKTÁT]
+- (po boji nebo když hráči o mapu požádají) Plazivá chodba ústí do jeskyně, tři čtverečky na šířku a tři na výšku.
+- Z horní stěny jeskyně vedou dva schody nahoru do další místnosti, také tři na tři.
+
+[PRO PJ] Poklad: v hromadě kostí, Vnímání proti 10 nebo když je hráči prohledají: kožený váček se stříbrnými mincemi. Hluk boje slyší Ottvar nahoře a připraví si lest (scéna 10).
+
+[DIKTÁT]
+- (jen když hráči váček najdou) Váček stříbrných mincí, dohromady za tři zlaté.
+
+## Scéna 10: Ottvarův úkryt
+
+[PRO PJ] Ottvar, mág na druhé úrovni, služebník Nekromanta, zabil Harlana, který tu slídil pro Čarodějnou královnu. Je zbabělý, ale chytrý. Když uslyšel boj dole, schoval knihu kouzel pod houpací síť, svázal si ruce provazem jen naoko a sedí v koutě jako vězeň. Bude tvrdit, že ho tu držely lidé Čarodějné královny a že fendarci jsou jejich hlídací zvířata.
+
+[DOSLOVA] Vypravěč: Po dvou schodech vylezete do malé suché místnosti. Svítí tu lucerna. Mezi skobami ve zdi visí houpací síť a na bedně leží rozvinutá mapa. V koutě sedí muž v potrhaném plášti se svázanýma rukama. Je bledý a třese se.
+
+[DOSLOVA] Ottvar: Díky bohům! Konečně! Pomozte mi, prosím. Jmenuji se Ottvar. Drželi mě tu lidé Čarodějné královny. Ty zrůdy dole jsou jejich hlídací psi. Rozvažte mě, rychle, než se vrátí!
+
+[PRO PJ] Prozrazení lži (hráči musí sami pojmout podezření nebo něco prohledat): Vnímání proti 13: provaz má jen jednu smyčku a uzel je navrchu, kde by na něj dosáhly zuby. Prohledání místnosti: pod houpací sítí kniha kouzel, na bedně dýka se zaschlou krví, na prstech Ottvara inkoust. Úzký bodný řez na Harlanově těle odpovídá té dýce.
+[PRO PJ] Co Ottvar dělá: když mu hráči uvěří, bude se nabízet, že je vyvede ven, a jakmile bude mít příležitost, popadne knihu kouzel a uteče, nebo hráče zavede ke krvesajům či krabům. Když ho prokouknou, zkusí jedno kouzlo (magická střela) a pak utéct. Pod pěti životy se vzdá, padne na kolena a prosí o život. Za život prozradí: pracuje pro Nekromanta z věže na severu; Harlan slídil pro Čarodějnou královnu z bažin na jihu; obě strany chtějí tenhle kraj.
+
+[DIKTÁT]
+- Úkryt má tři čtverečky na šířku a tři na výšku. Schody jsou uprostřed spodní stěny.
+- U levé stěny visí houpací síť. Uprostřed stojí bedna.
+
+[DOSLOVA] (když hráči prohledají úkryt) Vypravěč: Pod houpací sítí leží kniha v černé kůži, plná úzkého písma a nákresů. Na bedně je dýka s tmavými skvrnami na čepeli, měšec, ve kterém zvoní, a mapa okolí. Na mapě jsou dvě značky. Na severu věž, pod ní lebka. Na jihu bažina, v ní koruna.
+
+[DIKTÁT]
+- Měšec: dvanáct zlatých a dva drahokamy, každý za deset zlatých. Když vás je víc, rozdělte si je.
+- Mapa okolí. Na severu je věž s lebkou, na jihu bažina s korunou.
+- (jen když si ji hráč vezme) Ottvarova dýka: útok o jedna menší než tvá zbraň na blízko, zranění jedna kostka. Dá se házet.
+- (jen když si ji vezme Lianna) Kniha kouzel. Až postoupíš na další úroveň, můžeš si z ní přepsat jedno nové kouzlo.
+
+## Nestvůry (SRD 5.1, jen šestistěnné kostky, obranné hody)
+
+[PRO PJ] Počet nestvůr podle velikosti družiny
+- Lesní cesta, vychrtlí psi: 1–2 postavy 1 pes · 3 postavy 2 psi · 4 postavy 3 psi.
+- Tůň, obří krabi: 1–2 postavy 1 krab · 3 postavy 2 krabi · 4 postavy 3 krabi.
+- Dolní jeskyně, obří krysy: 1–2 postavy 2 krysy · 3 postavy 3 krysy · 4 postavy 4 krysy.
+- Pavučiny, obří vlčí pavouci: 1–2 postavy 1 pavouk · 3 postavy 2 pavouci · 4 postavy 3 pavouci.
+- Hnízdo, krvesajové (když se probudí): 1–2 postavy 2 · 3 postavy 3 · 4 postavy 4.
+- Doupě, fendarci: 1–2 postavy 1 fendark · 3–4 postavy 2 fendarci.
+
+[PRO PJ] Vychrtlý pes: Obrana 12 · Životy 5 · Rychlost 8 čtverečků · Kousnutí útočný bonus +3, zranění 3 (pevné) · kletba: životy ztracené kousnutím nejde vrátit kouzlem ani lektvarem, jen nocí odpočinku · uteče při polovině životů.
+
+[PRO PJ] Obří krab: Obrana 15 · Životy 13 · Rychlost 6 čtverečků, plave · Klepeto útočný bonus +3, zranění 4 (pevné) · uteče pod kámen při polovině životů · Záchrany: Obratnost +2, ostatní +0.
+
+[PRO PJ] Obří krysa: Obrana 12 · Životy 7 · Rychlost 6 čtverečků · Kousnutí útočný bonus +4, zranění 4 (pevné) · Smečka: když vedle cíle stojí další krysa, hráč má na obranu nevýhodu · uteče při dvou životech · Vidění ve tmě.
+
+[PRO PJ] Obří vlčí pavouk: Obrana 13 · Životy 11 · Rychlost 8 čtverečků, leze po stěnách a stropu · Kousnutí útočný bonus +3, zranění 4 (pevné) + jed (záchrana Odolnosti proti 11, při neúspěchu tři zranění navíc) · oheň: tři zranění a útěk.
+
+[PRO PJ] Krvesaj: Obrana 14 · Životy 2 · Rychlost 8 čtverečků, létá · Sosák útočný bonus +5, zranění 5 (pevné), pak se přisaje (viz scéna 7) · Záchrany: Obratnost +3, ostatní +0.
+
+[PRO PJ] Fendark: Obrana 12 · Životy 13 · Rychlost 6 čtverečků · Pařáty útočný bonus +4, zranění 5 (pevné) · Náraz: když se před útokem rozběhne aspoň čtyři čtverečky, cíl si hodí záchranu Síly proti 12; při neúspěchu upadne a na další obranný hod má nevýhodu · jed nepůsobí, nemrtvý · Posvátný plamen a jiná svatá magie mu dávají dvojnásob.
+
+[PRO PJ] Ottvar, mág: Obrana 12 · Životy 9 · Rychlost 6 čtverečků · Dýka útočný bonus +4, zranění 3 (pevné) · Kouzlo jednou za hru: Magická střela, zranění 6, nejde vykrýt (hráč neháže obranu) · zbabělý: pod pěti životy se vzdá.
+
+[PRO PJ] Obranný hod: musí padnout aspoň 22 + útočný bonus nestvůry − Obrana postavy. Útok +3: Obrana 12 → 13, Obrana 14 → 11, Obrana 17 → 8, Obrana 18 → 7. Útok +4: Obrana 12 → 14, Obrana 14 → 12, Obrana 17 → 9, Obrana 18 → 8. Útok +5: Obrana 12 → 15, Obrana 14 → 13, Obrana 17 → 10, Obrana 18 → 9.
+
+## Zakončení
+
+[PRO PJ] Hra končí, když se hráči vrátí do Bukoviny, ať už s Ottvarem jako zajatcem, s jeho knihou a dýkou jako důkazem, nebo jen se zprávou. Když Ottvar utekl, Vypravěč to v zakončení krátce zmíní: v kraji teď o hráčích ví někdo, kdo jim to nezapomene.
+
+[DOSLOVA] Vypravěč: Do Bukoviny dorazíte za tmy. Na návsi hoří oheň a lidé se sbíhají. Když jim povíte o mladíkovi na lesní cestě, stará žena se rozpláče. Harlan byl její vnuk. Stařešina vesnice, šedivý muž o holi, si dlouho prohlíží mapu s věží a korunou.
+
+[DOSLOVA] Stařešina: Takže je to pravda. Na severu se zase probudila věž a z bažin na jihu chodí cizí lidé. A náš Harlan se do toho zamotal. Vzali jste na sebe velké nebezpečí kvůli někomu, koho jste neznali. Bukovina vám to nezapomene. Přijměte, co máme.
+
+[PRO PJ] Nakonec Rádce nadiktuje k zapsání jen to, co ještě zapsané není.
+
+[DIKTÁT]
+- Odměna od stařešiny: deset zlatých každému.
+- Tři sta zkušeností. Tím postupuješ na další úroveň. Co to znamená pro tvoji kartu, si řekneme na začátku příští výpravy.
+</script>
 <script>
 const SYSTEM_PROMPT = `Jsi Pán jeskyně (PJ) hry „Dobrodružné výpravy za poklady“. Hraje se u skutečného stolu: hráči mají papír, tužku, čtverečkovaný papír na mapu a šestistěnné kostky. Tvůj text se čte nahlas českým syntezátorem řeči a hráči ti odpovídají hlasem; jejich řeč se převádí na text a může obsahovat chyby rozpoznávání – domýšlej rozumně, a když si nejsi jistý, krátce se zeptej.
 
@@ -506,7 +805,10 @@ DOBRODRUŽSTVÍ:
 `;
 
 const $ = id => document.getElementById(id);
-const adventure = $('adventure').textContent;
+const ADVENTURES = [{ id: 'korbel', title: 'Sklep U Zlatého korbele', el: 'adventure' }, { id: 'obet', title: 'První oběť (nové)', el: 'adventure2' }];
+let advId = store0('advId', 'korbel');
+function store0(k, d) { try { const v = localStorage.getItem('vyp_' + k); return v === null ? d : JSON.parse(v); } catch { return d; } }
+function adventureText() { const a = ADVENTURES.find(x => x.id === advId) || ADVENTURES[0]; return $(a.el).textContent; }
 const store = {
   get(k, d) { try { const v = localStorage.getItem('vyp_' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('vyp_' + k, JSON.stringify(v)); } catch {} }
@@ -1547,7 +1849,7 @@ async function askClaudeInner(userText) {
     // The model must start talking at once: no thinking before the answer (it cost almost 3 seconds per reply)
     const mdl = $('model').value;
     const body = { model: mdl, max_tokens: 900, stream: true,
-      system: [{ type: 'text', text: SYSTEM_PROMPT + adventure, cache_control: { type: 'ephemeral' } }], messages };
+      system: [{ type: 'text', text: SYSTEM_PROMPT + adventureText(), cache_control: { type: 'ephemeral' } }], messages };
     if (!store.get('noThinkParam', false)) body.thinking = { type: mdl.includes('haiku') ? 'disabled' : 'between_tools' };
     const post = () => fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: abortCtl.signal,
@@ -1925,6 +2227,7 @@ const STT_PHRASES = ['mám', 'dík', 'díky', 'děkuju', 'jasně', 'jo', 'ne', '
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
   'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování',
+  'Ottvar', 'Ottvara', 'Harlan', 'Bukovina', 'stařešina', 'fendark', 'krvesaj', 'pavučina', 'pavučiny', 'tůň', 'krab', 'jáma', 'římsa', 'pochodeň', 'Čarodějná královna', 'Nekromant',
   'zákeřný útok', 'Šťastlivec', 'plížení', 'Plížení', 'zručnost', 'Zručnost', 'dovednosti', 'zvláštní schopnosti', 'jednou za kolo', 'výhoda', 'výhodu',
   'krátký luk', 'zlodějské náčiní', 'provaz', 'zásoby', 'životy', 'obrana', 'vyberu si', 'zahraju si za', 'hraju za', 'ještě jednou', 'co to znamená',
   'zopakuj ten řádek', 'půlčík tulák', 'trpaslík bojovník', 'lidský klerik', 'elfí kouzelnice', 'válečná sekera', 'ohnivý šíp', 'dostřel', 'zranění', 'kostka'];
@@ -1951,7 +2254,8 @@ const SCRIBE_TERMS = ['Borymir', 'Borymira', 'Pepin', 'Pepina', 'Bratr Ondřej',
   'půlčík', 'půlčíka', 'trpaslík', 'trpaslíka', 'klerik', 'klerika', 'kouzelnice', 'kouzelnici', 'bojovník', 'tulák', 'elfí kouzelnice',
   'zákeřný útok', 'Šťastlivec', 'plížení', 'zručnost', 'vnímání', 'jednou za kolo', 'zlodějské náčiní', 'krátký luk', 'krátký meč',
   'válečná sekera', 'palcát', 'magická střela', 'ohnivý šíp', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'kostlivec', 'sarkofág',
-  'pečetní prsten', 'Pane jeskyně', 'Rádce', 'Vypravěči', 'zopakuj', 'pokračuj', 'dál', 'Zlatý korbel'];
+  'pečetní prsten', 'Pane jeskyně', 'Rádce', 'Vypravěči', 'zopakuj', 'pokračuj', 'dál', 'Zlatý korbel',
+  'Ottvar', 'Harlan', 'Bukovina', 'fendark', 'krvesaj', 'pavučina', 'pochodeň', 'tůň'];
 let scribeModel = 'scribe_v2', scribeNoTerms = false;
 async function scribeStt(b64, sr) {
   const key = $('elKey').value.trim();
@@ -2168,7 +2472,7 @@ $('pauseBtn').onclick = () => {
 };
 $('copyLog').onclick = async () => {
   const head = ['Záznam hry – Dobrodružné výpravy za poklady, ' + new Date().toLocaleString('cs-CZ'),
-    'Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s · slyšení: ' + (sttService() === 'el' ? 'ElevenLabs ' + scribeModel + (scribeNoTerms ? ' bez klíčových slov' : '') : 'Google ' + ((STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)] || {}).model || 'výchozí') + (STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)].ctx ? ' s nápovědou' : ' BEZ nápovědy')),
+    'Dobrodružství: ' + ((ADVENTURES.find(x => x.id === advId) || {}).title || advId) + ' · Mozek: ' + $('model').value + ' · způsob mluvení: ' + engine() + ' · model čtených hlasů: ' + $('aiModel').value + ' · konec promluvy po ' + $('endSilence').value + ' s · slyšení: ' + (sttService() === 'el' ? 'ElevenLabs ' + scribeModel + (scribeNoTerms ? ' bez klíčových slov' : '') : 'Google ' + ((STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)] || {}).model || 'výchozí') + (STT_CONFIGS[Math.min(sttCfg, STT_CONFIGS.length - 1)].ctx ? ' s nápovědou' : ' BEZ nápovědy')),
     'Obsazení: ' + cast.map(c => c.role + ' = ' + (engine() === 'el' ? (elVoices.find(v => v.voice_id === elVoiceFor(c)) || {}).name || '?' : c.voice)).join(', ') + (engine() === 'el' ? ' · model ElevenLabs: ' + $('elModel').value : ''), ''];
   const text = head.concat(gameLog).join('\n');
   let ok = false;
@@ -2186,12 +2490,18 @@ $('testVoice').onclick = () => {
   speak('Rádce', 'Hoď třemi kostkami a řekni mi součet.', true);
   speak('Matouš', 'Vy vypadáte jako lidi, co se nebojí tmy.', true);
 };
+for (const id of ['advPick', 'advPick2']) {
+  for (const a of ADVENTURES) { const op = document.createElement('option'); op.value = a.id; op.textContent = a.title; $(id).appendChild(op); }
+  $(id).value = advId;
+  $(id).onchange = () => { $('advPick').value = $('advPick2').value = $(id).value; };
+}
 $('startNew').onclick = () => $('newGame').onclick();
 $('startResume').onclick = () => $('resumeGame').onclick();
 function hideStart() { $('startBar').style.display = 'none'; try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {} }
 $('newGame').onclick = () => {
   saveSettings();
   if (messages.length && !confirm('Smazat uloženou hru a začít znovu?')) return;
+  advId = $('advPick').value || 'korbel'; store.set('advId', advId);
   messages = []; store.set('messages', messages); gameLog = []; logEv('HRA', 'nová hra'); $('log').innerHTML = ''; hideStart(); gameStarted = true;
   $('settings').classList.remove('open');
   ensureOutCtx(); if (sttMode() === 'google') startMic();
