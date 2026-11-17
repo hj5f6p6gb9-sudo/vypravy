@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. a</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. b</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -572,7 +572,9 @@ async function loadElVoices() {
     if (res.status === 401) throw new Error('ElevenLabs tenhle klíč nezná. Na elevenlabs.io v nastavení účtu (API Keys) vytvoř nový klíč, celý ho zkopíruj, vlož sem místo starého a klikni znovu.');
     if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
     const data = await res.json();
-    elVoices = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
+    // only the voices the user added or made; ElevenLabs' own default voices (category "premade") are left out
+    const own = (data.voices || []).filter(v => v.category !== 'premade');
+    elVoices = (own.length ? own : (data.voices || [])).sort((a, b) => a.name.localeCompare(b.name));
     store.set('elVoices', elVoices.map(v => ({ voice_id: v.voice_id, name: v.name, labels: v.labels })));
     populateSelects(); renderCast();
     let models = '';
