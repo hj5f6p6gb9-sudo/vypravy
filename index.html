@@ -57,9 +57,10 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. j</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. k</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
+      <button id="copyNotes" title="Zkopíruje jen poznámky ze zápisníku">Poznámky</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
       <button id="openSettings">Nastavení</button>
     </span>
@@ -2262,10 +2263,60 @@ function voicePause(on) {
   $('pauseBtn').onclick();
   addLine('Rádce', on ? '(Pauza. Až budete chtít hrát dál, řekněte „pokračujeme“.)' : '(Pokračujeme.)');
 }
+// ---------- Notebook for testing: "zápisníku, …" … "konec zápisu" ----------
+let note = null, gameNotes = store.get('gameNotes', []), heardRecent = [];
+const NOTE_START_RE = /^(\w+ ){0,2}zapisnik\w*\b/, NOTE_END_RE = /\bkonec (zapisu|zapisniku|poznamky)\b/;
+function noteStart(firstWords) {
+  note = { parts: [], pj: pjRecent.length ? pjRecent[pjRecent.length - 1] : '', heard: heardRecent.slice(-2), at: new Date() };
+  if (firstWords) note.parts.push(firstWords);
+  holdPJ(); setStatus('Zapisuju poznámku… Až skončíš, řekni „konec zápisu“.');
+  addLine('Zápisník', '(Zapisuju. Konec: „konec zápisu“.)');
+  noteTimer();
+}
+function noteTimer() { clearTimeout(note.t); note.t = setTimeout(() => noteEnd('ticho 15 s'), 15000); }
+function noteEnd(why) {
+  if (!note) return;
+  clearTimeout(note.t);
+  const n = note; note = null;
+  const text = n.parts.join(' ').replace(/\s+/g, ' ').trim();
+  if (text) {
+    const time = [n.at.getHours(), n.at.getMinutes(), n.at.getSeconds()].map(x => String(x).padStart(2, '0')).join(':');
+    const entry = '[' + time + '] POZNÁMKA: ' + text + '  ‹PJ naposledy: „' + String(n.pj).replace(/\s+/g, ' ').slice(0, 300) + '“' + (n.heard.length ? ' · slyšeno předtím: „' + n.heard.join(' | ') + '“' : '') + '›';
+    gameNotes.push(entry); store.set('gameNotes', gameNotes);
+    logEv('POZNÁMKA', text + '  ‹PJ naposledy: „' + String(n.pj).replace(/\s+/g, ' ').slice(0, 300) + '“›' + (why ? ' (' + why + ')' : ''));
+    addLine('Zápisník', 'Zapsáno: ' + text);
+  } else addLine('Zápisník', '(Nic nezapsáno.)');
+  noteBeep(); if (!paused) { resumePJ(); idleStatus(); } else setStatus('Pauza. Hra teď neposlouchá ani nemluví.');
+}
+function noteBeep() {
+  try { ensureOutCtx(); if (!outCtx) return; if (outCtx.state === 'suspended') outCtx.resume();
+    const o = outCtx.createOscillator(), g = outCtx.createGain(); o.frequency.value = 880; g.gain.value = 0.08;
+    o.connect(g); g.connect(outCtx.destination); o.start(); o.stop(outCtx.currentTime + 0.15); } catch (e) {}
+}
+// returns true when the sentence belonged to the notebook
+function noteHeard(raw) {
+  const nv = norm(raw || '').join(' ');
+  if (note) {
+    const m = nv.match(NOTE_END_RE);
+    if (m) { const cut = raw.search(/konec\s+(zápisu|zápisníku|poznámky|zapisu|zapisniku|poznamky)/i); if (cut > 0) note.parts.push(raw.slice(0, cut)); noteEnd(); }
+    else { note.parts.push(raw); noteTimer(); }
+    return true;
+  }
+  if (NOTE_START_RE.test(nv)) {
+    let rest = raw.replace(/^.*?z[áa]pisn[íi]k\w*[\s,.:!-]*/i, '');
+    const end = rest.search(/konec\s+(zápisu|zápisníku|poznámky|zapisu|zapisniku|poznamky)/i);
+    if (end >= 0) { noteStart(rest.slice(0, end)); noteEnd(); }   // the whole note in one breath
+    else noteStart(rest);
+    return true;
+  }
+  heardRecent.push(raw); if (heardRecent.length > 4) heardRecent.shift();
+  return false;
+}
 function handleHeard(raw, barge, ratio) {
   raw = (raw || '').replace(/\s+/g, ' ').trim();
   if (tm.end && !tm.stt) tm.stt = performance.now();
   if (raw) logEv('SLYŠENO', raw + (barge ? '  [do řeči PJ]' : ''));
+  if (raw && noteHeard(raw)) return;
   const nv = norm(raw || '').join(' ');
   if (paused) { if (nv.split(' ').length <= 6 && RESUME_RE.test(nv)) { logEv('PAUZA', 'hlasem vypnuta'); voicePause(false); } return; }
   if (nv.split(' ').length <= 8 && PAUSE_RE.test(nv)) { logEv('PAUZA', 'hlasem zapnuta'); voicePause(true); return; }
@@ -2305,6 +2356,7 @@ const STT_PHRASES = ['mám', 'dík', 'díky', 'děkuju', 'jasně', 'jo', 'ne', '
   'bratr Ondřej', 'páčidlo', 'kostlivec', 'krysa', 'regál', 'sarkofág', 'truhla', 'pečetní prsten', 'obranný hod', 'iniciativa', 'útočím',
   'sekera', 'krátký meč', 'luk', 'palcát', 'magická střela', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'bojovník', 'tulák', 'klerik',
   'kouzelník', 'trpaslík', 'půlčík', 'elf', 'gnóm', 'Vnímání', 'Atletika', 'Přesvědčování',
+  'zápisníku', 'zápisník', 'konec zápisu',
   'Ottvar', 'Ottvara', 'Harlan', 'Bukovina', 'stařešina', 'fendark', 'krvesaj', 'pavučina', 'pavučiny', 'tůň', 'krab', 'jáma', 'římsa', 'pochodeň', 'Čarodějná královna', 'Nekromant',
   'zákeřný útok', 'Šťastlivec', 'plížení', 'Plížení', 'zručnost', 'Zručnost', 'dovednosti', 'zvláštní schopnosti', 'jednou za kolo', 'výhoda', 'výhodu',
   'krátký luk', 'zlodějské náčiní', 'provaz', 'zásoby', 'životy', 'obrana', 'vyberu si', 'zahraju si za', 'hraju za', 'ještě jednou', 'co to znamená',
@@ -2333,7 +2385,7 @@ const SCRIBE_TERMS = ['Borymir', 'Borymira', 'Pepin', 'Pepina', 'Bratr Ondřej',
   'zákeřný útok', 'Šťastlivec', 'plížení', 'zručnost', 'vnímání', 'jednou za kolo', 'zlodějské náčiní', 'krátký luk', 'krátký meč',
   'válečná sekera', 'palcát', 'magická střela', 'ohnivý šíp', 'léčivé slovo', 'posvátný plamen', 'druhý dech', 'kostlivec', 'sarkofág',
   'pečetní prsten', 'Pane jeskyně', 'Rádce', 'Vypravěči', 'zopakuj', 'pokračuj', 'dál', 'Zlatý korbel',
-  'Ottvar', 'Harlan', 'Bukovina', 'fendark', 'krvesaj', 'pavučina', 'pochodeň', 'tůň'];
+  'Ottvar', 'Harlan', 'Bukovina', 'fendark', 'krvesaj', 'pavučina', 'pochodeň', 'tůň', 'zápisníku', 'konec zápisu'];
 let scribeModel = 'scribe_v2', scribeNoTerms = false;
 async function scribeStt(b64, sr) {
   const key = $('elKey').value.trim();
@@ -2460,6 +2512,7 @@ $('typedInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendTy
 function sendTyped() {
   const t = $('typedInput').value.trim(); if (!t) return;
   $('typedInput').value = ''; $('typedInput').blur();
+  if (/^(z[áa]pisn[íi]k\w*|pozn[áa]mka)\s*[:,]/i.test(t)) { noteStart(t.replace(/^[^:,]*[:,]\s*/, '')); noteEnd(); return; }
   interruptPJ();
   addLine('Vy', t, 'player');
   tm = { end: performance.now(), silence: 0 };
@@ -2560,6 +2613,15 @@ $('copyLog').onclick = async () => {
   }
   setStatus(ok ? 'Záznam hry je zkopírovaný (' + gameLog.length + ' řádků). Vlož ho do chatu.' : 'Záznam se nepodařilo zkopírovat.');
 };
+$('copyNotes').onclick = async () => {
+  const text = ['Poznámky ze zápisníku – ' + new Date().toLocaleString('cs-CZ'), ''].concat(gameNotes.length ? gameNotes : ['(žádné poznámky)']).join('\n');
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove();
+  }
+  setStatus(ok ? 'Poznámky jsou zkopírované (' + gameNotes.length + '). Vlož je do chatu.' : 'Poznámky se nepodařilo zkopírovat.');
+};
 $('closeSettings').onclick = () => { saveSettings(); $('settings').classList.remove('open'); idleStatus(); };
 $('testVoice').onclick = () => {
   saveSettings(); ensureOutCtx(); shutUp();
@@ -2580,7 +2642,7 @@ $('newGame').onclick = () => {
   saveSettings();
   if (messages.length && !confirm('Smazat uloženou hru a začít znovu?')) return;
   advId = $('advPick').value || 'korbel'; store.set('advId', advId);
-  messages = []; store.set('messages', messages); gameLog = []; logEv('HRA', 'nová hra'); $('log').innerHTML = ''; hideStart(); gameStarted = true;
+  messages = []; store.set('messages', messages); gameLog = []; gameNotes = []; store.set('gameNotes', gameNotes); logEv('HRA', 'nová hra'); $('log').innerHTML = ''; hideStart(); gameStarted = true;
   $('settings').classList.remove('open');
   ensureOutCtx(); if (sttMode() === 'google') startMic();
   tm = { end: performance.now(), silence: 0 }; liveWarm();
