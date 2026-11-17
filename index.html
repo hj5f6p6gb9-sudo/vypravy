@@ -57,7 +57,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 16. 11. n</span></h1>
+    <h1>Dobrodružné výpravy za poklady <span style="color:var(--dim);font-weight:400;font-size:13px">verze 17. 11. a</span></h1>
     <span style="display:flex;gap:8px">
       <button id="pauseBtn" title="Hra přestane poslouchat i mluvit">⏸ Pauza</button>
       <button id="copyLog" title="Zkopíruje celý záznam hry pro vyhodnocení">Záznam hry</button>
@@ -84,12 +84,12 @@
     <h2>Nastavení</h2>
     <label>Klíč Claude (mozek Pána jeskyně, začíná sk-ant-…)</label>
     <input id="apiKey" type="password" autocomplete="off">
-    <label>Klíč AI Studio (hlasy, začíná AIza…)</label>
-    <input id="aiKey" type="password" autocomplete="off">
-    <label>Klíč Google Cloud (rozpoznávání řeči, začíná AIza…)</label>
+    <div style="display:none"><label>Klíč AI Studio</label>
+    <input id="aiKey" type="password" autocomplete="off"></div>
+    <label>Klíč Google Cloud (slyšení hráčů, začíná AIza…)</label>
     <input id="gKey" type="password" autocomplete="off">
     <div class="hint">Klíče se uloží jen v tomto prohlížeči.</div>
-    <label>Způsob mluvení</label>
+    <div style="display:none"><label>Způsob mluvení</label>
     <select id="engine">
       <option value="el">ElevenLabs – nejvýraznější hlasy, platí se podle znaků</option>
       <option value="live">Živé hlasy z AI Studia – bez denního limitu (zkouška)</option>
@@ -98,7 +98,7 @@
       <option value="google">Starší: Google Chirp 3 HD</option>
       <option value="mac">Starší: hlasy Macu</option>
     </select>
-    <div class="hint">Živé hlasy umí jen 30 základních hlasů ze seznamu, vlastní hlasy z AI Studia zatím ne.</div>
+    </div>
     <label>Tempo řeči</label>
     <select id="tempo">
       <option value="">Podle hlasu a role (pomalejší)</option>
@@ -106,7 +106,7 @@
       <option value="rychle a energicky, bez pauz mezi větami">Rychlé</option>
     </select>
     <div class="hint">Diktování k zapsání zůstává vždy pomalé.</div>
-    <div id="vBox">
+    <div id="vBox" style="display:none!important">
       <label>Klíč Agent Platform (express mode, začíná AQ. nebo AIza…)</label>
       <input id="vKey" type="password" autocomplete="off">
       <div class="hint">Uloží se jen v tomto prohlížeči. Hlasy a pokyny se berou z obsazení níže.</div>
@@ -125,7 +125,7 @@
         <option value="eleven_turbo_v2_5">Turbo v2.5 – poloviční cena</option>
       </select>
       <div class="row"><button class="secondary" id="elLoad">Načíst moje hlasy a modely z ElevenLabs</button></div>
-      <div class="hint" id="elInfo">Hlasy si nejdřív přidej na elevenlabs.io do „My Voices“ (ve Voice Library hledej Czech). Pak je tady načti a rozděl rolím v obsazení.</div>
+      <div class="hint" id="elInfo">Hlasy si nejdřív přidej na elevenlabs.io do „My Voices“ (ve Voice Library hledej Czech, nebo si hlas navrhni podle popisu ve Voice Design). Pak je tady načti a rozděl rolím v obsazení níže.</div>
       <div class="hint" id="elUsage"></div>
       <div class="row"><button class="secondary" id="elReset">Vynulovat počítadlo znaků</button></div>
     </div>
@@ -133,10 +133,10 @@
     <div id="aiBox">
       <details id="creator" open>
         <summary>Obsazení hlasů (pro tvůrce výpravy)</summary>
-        <div class="hint">Každá role má svůj hlas a pokyn k přednesu. ▶ = poslechnout. &lt;/&gt; = vložit kód z tlačítka „Get code“ v AI Studiu (nebo jen označení hlasu voice_…), hlas a pokyn se z něj vyplní samy. Vlastní hlasy fungují jen u čtených hlasů. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
+        <div class="hint">Každá role má svůj hlas z ElevenLabs. ▶ = poslechnout. Postava, která tu není, mluví hlasem „Ostatní postavy“.</div>
         <div id="castList"></div>
         <div class="row"><button class="secondary" id="castAdd">+ Přidat postavu</button><button class="secondary" id="castReset">Vrátit výchozí obsazení</button></div>
-        <div id="aiOnly">
+        <div id="aiOnly" style="display:none!important">
           <div class="row"><button class="secondary" id="aiLoad">Načíst moje hlasy z AI Studia</button></div>
           <div class="hint" id="aiInfo"></div>
           <div class="hint" id="aiUsage"></div>
@@ -151,8 +151,8 @@
         <option value="claude-sonnet-5-5">Claude Sonnet 5.5 – chytřejší (výchozí)</option>
         <option value="claude-haiku-5-5">Claude Haiku 5.5 – rychlejší, ale dělá víc chyb</option>
       </select>
-      <label>Model hlasu</label>
-      <select id="aiModel">
+      <label style="display:none">Model hlasu</label>
+      <select id="aiModel" style="display:none">
         <option value="gemini-3.8-flash-tts">Gemini 3.8 Flash TTS – výraznější přednes</option>
         <option value="gemini-3.8-flash-lite-tts">Gemini 3.8 Flash-Lite TTS – rychlejší a levnější</option>
       </select>
@@ -171,12 +171,12 @@
         <option value="google">Google – mikrofon pořád zapnutý (doporučeno)</option>
         <option value="chrome">Chrome – starší způsob</option>
       </select>
-      <div id="gBox">
+      <div id="gBox" style="display:none!important">
         <div class="row"><button class="secondary" id="gLoad">Načíst české hlasy z Googlu</button></div>
         <div class="hint" id="gInfo"></div>
         <div class="hint" id="gUsage"></div>
       </div>
-      <div id="roleBox">
+      <div id="roleBox" style="display:none!important">
         <label>Hlas Vypravěče</label><select id="voiceNarr"></select>
         <label>Hlas Rádce (pravidla, mapa)</label><select id="voiceRad"></select>
         <label>Hlas postav a nestvůr</label><select id="voiceChar"></select>
@@ -569,6 +569,7 @@ async function loadElVoices() {
   $('elInfo').textContent = 'Načítám hlasy…';
   try {
     const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
+    if (res.status === 401) throw new Error('ElevenLabs tenhle klíč nezná. Na elevenlabs.io v nastavení účtu (API Keys) vytvoř nový klíč, celý ho zkopíruj, vlož sem místo starého a klikni znovu.');
     if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
     const data = await res.json();
     elVoices = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
@@ -1977,7 +1978,8 @@ function sendTyped() {
 // ---------- Settings ----------
 $('apiKey').value = store.get('apiKey', '');
 if (store.get('ver2', 0) < 3) { store.set('ver2', 3); store.set('engine', 'el'); }   // back to the read voices to try the designed ones
-$('engine').value = store.get('engine', 'live');
+store.set('engine', 'el');
+$('engine').value = 'el';
 $('aiKey').value = store.get('aiKey', '');
 $('aiModel').value = store.get('aiModel', 'gemini-3.8-flash-tts');
 $('aiModel').onchange = () => store.set('aiModel', $('aiModel').value);
@@ -1991,9 +1993,11 @@ $('elKey').value = store.get('elKey', '');
 $('gKey').value = store.get('gKey', '');
 gVoices = store.get('gVoices', []);
 elVoices = store.get('elVoices', []);
-function engineChanged() { $('aiBox').style.display = usesCast(engine()) ? 'block' : 'none'; $('roleBox').style.display = usesCast(engine()) ? 'none' : 'block';
-  $('aiOnly').style.display = (engine() === 'gemini' || engine() === 'live') ? 'block' : 'none'; $('vBox').style.display = engine() === 'vertex' ? 'block' : 'none'; if (typeof renderCast === 'function') renderCast();
-  $('elBox').style.display = engine() === 'el' ? 'block' : 'none'; $('gBox').style.display = engine() === 'google' ? 'block' : 'none'; populateSelects(); showUsage(); }
+function engineChanged() {   // voices come only from ElevenLabs; the other ways of speaking stay in the code but are hidden
+  $('engine').value = 'el';
+  $('aiBox').style.display = 'block'; $('roleBox').style.display = 'none'; $('aiOnly').style.display = 'none'; $('vBox').style.display = 'none';
+  $('elBox').style.display = 'block'; $('gBox').style.display = 'none';
+  if (typeof renderCast === 'function') renderCast(); populateSelects(); showUsage(); }
 $('stt').value = store.get('stt', 'google');
 $('stt').onchange = () => { store.set('stt', sttMode()); engineChanged(); if (sttMode() === 'google') { hfStop(); sttCfg = 0; store.set('sttCfg', 0); } };
 $('endSilence').value = store.get('endSilence', 0.6);
@@ -2018,7 +2022,6 @@ $('gLoad').onclick = () => { store.set('gKey', $('gKey').value.trim()); loadGVoi
 loadVoices();
 engineChanged();
 renderCast();
-if ($('aiKey').value && !aiVoices.length) loadAiVoices(true);
 if (store.get('ver', 0) < 4) { store.set('ver', 4); store.set('model', 'claude-sonnet-5-5'); store.set('noThinkParam', false); }   // back to the smarter model
 $('model').value = store.get('model', 'claude-sonnet-5-5');
 $('model').onchange = () => store.set('noThinkParam', false);
